@@ -1,0 +1,188 @@
+package com.fleshgrinder.platform.fixtures;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Unmodifiable;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.fleshgrinder.platform.Arch.*;
+import static com.fleshgrinder.platform.Env.*;
+import static com.fleshgrinder.platform.Os.*;
+
+/**
+ * {@code rustc --print target-list}
+ *
+ * https://doc.rust-lang.org/nightly/rustc/platform-support.html
+ */
+public final class Rust {
+    public static final @NotNull @Unmodifiable Map<String, PlatformSpec> TARGETS =
+        new HashMap<String, PlatformSpec>() {{
+            put("aarch64-apple-darwin", new PlatformSpec(DARWIN, ARM_64));
+            put("aarch64-apple-ios", new PlatformSpec(DARWIN, ARM_64));
+            put("aarch64-apple-ios-macabi", new PlatformSpec(DARWIN, ARM_64));
+            put("aarch64-apple-ios-sim", new PlatformSpec(DARWIN, ARM_64));
+            put("aarch64-apple-tvos", new PlatformSpec(DARWIN, ARM_64));
+            put("aarch64-fuchsia", new PlatformSpec(FUCHSIA, ARM_64));
+            put("aarch64-linux-android", new PlatformSpec(LINUX, ARM_64));
+            put("aarch64-pc-windows-msvc", new PlatformSpec(WINDOWS, ARM_64, MSVC));
+            put("aarch64-unknown-freebsd", new PlatformSpec(FREEBSD, ARM_64));
+            put("aarch64-unknown-hermit", new PlatformSpec(ARM_64));
+            put("aarch64-unknown-linux-gnu", new PlatformSpec(LINUX, ARM_64, GLIBC));
+            put("aarch64-unknown-linux-gnu_ilp32", new PlatformSpec(LINUX, ARM_64, GLIBC));
+            put("aarch64-unknown-linux-musl", new PlatformSpec(LINUX, ARM_64, MUSL));
+            put("aarch64-unknown-netbsd", new PlatformSpec(NETBSD, ARM_64));
+            put("aarch64-unknown-none", new PlatformSpec(ARM_64));
+            put("aarch64-unknown-none-softfloat", new PlatformSpec(ARM_64));
+            put("aarch64-unknown-openbsd", new PlatformSpec(OPENBSD, ARM_64));
+            put("aarch64-unknown-redox", new PlatformSpec(REDOX, ARM_64));
+            put("aarch64-uwp-windows-msvc", new PlatformSpec(WINDOWS, ARM_64, MSVC));
+            put("aarch64-wrs-vxworks", new PlatformSpec(VXWORKS, ARM_64));
+            put("aarch64_be-unknown-linux-gnu", new PlatformSpec(LINUX, ARM_64_BE, GLIBC));
+            put("aarch64_be-unknown-linux-gnu_ilp32", new PlatformSpec(LINUX, ARM_64_BE, GLIBC));
+            put("arm-linux-androideabi", new PlatformSpec(LINUX, ARM_32));
+            put("arm-unknown-linux-gnueabi", new PlatformSpec(LINUX, ARM_32, GLIBC));
+            put("arm-unknown-linux-gnueabihf", new PlatformSpec(LINUX, ARM_32, GLIBC));
+            put("arm-unknown-linux-musleabi", new PlatformSpec(LINUX, ARM_32, MUSL));
+            put("arm-unknown-linux-musleabihf", new PlatformSpec(LINUX, ARM_32, MUSL));
+            put("armebv7r-none-eabi", new PlatformSpec(ARM_32_BE));
+            put("armebv7r-none-eabihf", new PlatformSpec(ARM_32_BE));
+            put("armv4t-unknown-linux-gnueabi", new PlatformSpec(LINUX, ARM_32, GLIBC));
+            put("armv5te-unknown-linux-gnueabi", new PlatformSpec(LINUX, ARM_32, GLIBC));
+            put("armv5te-unknown-linux-musleabi", new PlatformSpec(LINUX, ARM_32, MUSL));
+            put("armv5te-unknown-linux-uclibceabi", new PlatformSpec(LINUX, ARM_32, UCLIBC));
+            put("armv6-unknown-freebsd", new PlatformSpec(FREEBSD, ARM_32));
+            put("armv6-unknown-netbsd-eabihf", new PlatformSpec(NETBSD, ARM_32));
+            put("armv7-apple-ios", new PlatformSpec(DARWIN, ARM_32));
+            put("armv7-linux-androideabi", new PlatformSpec(LINUX, ARM_32));
+            put("armv7-unknown-freebsd", new PlatformSpec(FREEBSD, ARM_32));
+            put("armv7-unknown-linux-gnueabi", new PlatformSpec(LINUX, ARM_32, GLIBC));
+            put("armv7-unknown-linux-gnueabihf", new PlatformSpec(LINUX, ARM_32, GLIBC));
+            put("armv7-unknown-linux-musleabi", new PlatformSpec(LINUX, ARM_32, MUSL));
+            put("armv7-unknown-linux-musleabihf", new PlatformSpec(LINUX, ARM_32, MUSL));
+            put("armv7-unknown-netbsd-eabihf", new PlatformSpec(NETBSD, ARM_32));
+            put("armv7-wrs-vxworks-eabihf", new PlatformSpec(VXWORKS, ARM_32));
+            put("armv7a-none-eabi", new PlatformSpec(ARM_32));
+            put("armv7a-none-eabihf", new PlatformSpec(ARM_32));
+            put("armv7r-none-eabi", new PlatformSpec(ARM_32));
+            put("armv7r-none-eabihf", new PlatformSpec(ARM_32));
+            put("armv7s-apple-ios", new PlatformSpec(DARWIN, ARM_32));
+            // not native and currently not supported by this library
+            put("asmjs-unknown-emscripten", new PlatformSpec());
+            // false positive on glibc but impossible to fix generically
+            put("avr-unknown-gnu-atmega328", new PlatformSpec(GLIBC));
+            put("hexagon-unknown-linux-musl", new PlatformSpec(LINUX, MUSL));
+            put("i386-apple-ios", new PlatformSpec(DARWIN, X86_32));
+            put("i586-pc-windows-msvc", new PlatformSpec(WINDOWS, X86_32, MSVC));
+            put("i586-unknown-linux-gnu", new PlatformSpec(LINUX, X86_32, GLIBC));
+            put("i586-unknown-linux-musl", new PlatformSpec(LINUX, X86_32, MUSL));
+            put("i686-apple-darwin", new PlatformSpec(DARWIN, X86_32));
+            put("i686-linux-android", new PlatformSpec(LINUX, X86_32));
+            put("i686-pc-windows-gnu", new PlatformSpec(WINDOWS, X86_32, GLIBC));
+            put("i686-pc-windows-msvc", new PlatformSpec(WINDOWS, X86_32, MSVC));
+            put("i686-unknown-freebsd", new PlatformSpec(FREEBSD, X86_32));
+            put("i686-unknown-haiku", new PlatformSpec(HAIKU, X86_32));
+            put("i686-unknown-linux-gnu", new PlatformSpec(LINUX, X86_32, GLIBC));
+            put("i686-unknown-linux-musl", new PlatformSpec(LINUX, X86_32, MUSL));
+            put("i686-unknown-netbsd", new PlatformSpec(NETBSD, X86_32));
+            put("i686-unknown-openbsd", new PlatformSpec(OPENBSD, X86_32));
+            put("i686-unknown-uefi", new PlatformSpec(X86_32));
+            put("i686-uwp-windows-gnu", new PlatformSpec(WINDOWS, X86_32, GLIBC));
+            put("i686-uwp-windows-msvc", new PlatformSpec(WINDOWS, X86_32, MSVC));
+            put("i686-wrs-vxworks", new PlatformSpec(VXWORKS, X86_32));
+            put("mips-unknown-linux-gnu", new PlatformSpec(LINUX, MIPS_32, GLIBC));
+            put("mips-unknown-linux-musl", new PlatformSpec(LINUX, MIPS_32, MUSL));
+            put("mips-unknown-linux-uclibc", new PlatformSpec(LINUX, MIPS_32, UCLIBC));
+            put("mips64-unknown-linux-gnuabi64", new PlatformSpec(LINUX, MIPS_64, GLIBC));
+            put("mips64-unknown-linux-muslabi64", new PlatformSpec(LINUX, MIPS_64, MUSL));
+            put("mips64el-unknown-linux-gnuabi64", new PlatformSpec(LINUX, MIPS_64_LE, GLIBC));
+            put("mips64el-unknown-linux-muslabi64", new PlatformSpec(LINUX, MIPS_64_LE, MUSL));
+            // this OS is to esoteric for us to consider supporting
+            put("mipsel-sony-psp", new PlatformSpec(MIPS_32_LE));
+            put("mipsel-unknown-linux-gnu", new PlatformSpec(LINUX, MIPS_32_LE, GLIBC));
+            put("mipsel-unknown-linux-musl", new PlatformSpec(LINUX, MIPS_32_LE, MUSL));
+            put("mipsel-unknown-linux-uclibc", new PlatformSpec(LINUX, MIPS_32_LE, UCLIBC));
+            put("mipsel-unknown-none", new PlatformSpec(MIPS_32_LE));
+            put("mipsisa32r6-unknown-linux-gnu", new PlatformSpec(LINUX, MIPS_32, GLIBC));
+            put("mipsisa32r6el-unknown-linux-gnu", new PlatformSpec(LINUX, MIPS_32_LE, GLIBC));
+            put("mipsisa64r6-unknown-linux-gnuabi64", new PlatformSpec(LINUX, MIPS_64, GLIBC));
+            put("mipsisa64r6el-unknown-linux-gnuabi64", new PlatformSpec(LINUX, MIPS_64_LE, GLIBC));
+            put("msp430-none-elf", new PlatformSpec());
+            put("nvptx64-nvidia-cuda", new PlatformSpec());
+            put("powerpc-unknown-linux-gnu", new PlatformSpec(LINUX, PPC_32, GLIBC));
+            put("powerpc-unknown-linux-gnuspe", new PlatformSpec(LINUX, PPC_32, GLIBC));
+            put("powerpc-unknown-linux-musl", new PlatformSpec(LINUX, PPC_32, MUSL));
+            put("powerpc-unknown-netbsd", new PlatformSpec(NETBSD, PPC_32));
+            put("powerpc-unknown-openbsd", new PlatformSpec(OPENBSD, PPC_32));
+            put("powerpc-wrs-vxworks", new PlatformSpec(VXWORKS, PPC_32));
+            put("powerpc-wrs-vxworks-spe", new PlatformSpec(VXWORKS, PPC_32));
+            put("powerpc64-unknown-freebsd", new PlatformSpec(FREEBSD, PPC_64));
+            put("powerpc64-unknown-linux-gnu", new PlatformSpec(LINUX, PPC_64, GLIBC));
+            put("powerpc64-unknown-linux-musl", new PlatformSpec(LINUX, PPC_64, MUSL));
+            put("powerpc64-wrs-vxworks", new PlatformSpec(VXWORKS, PPC_64));
+            put("powerpc64le-unknown-linux-gnu", new PlatformSpec(LINUX, PPC_64_LE, GLIBC));
+            put("powerpc64le-unknown-linux-musl", new PlatformSpec(LINUX, PPC_64_LE, MUSL));
+            put("riscv32gc-unknown-linux-gnu", new PlatformSpec(LINUX, RISCV_32, GLIBC));
+            put("riscv32gc-unknown-linux-musl", new PlatformSpec(LINUX, RISCV_32, MUSL));
+            put("riscv32i-unknown-none-elf", new PlatformSpec(RISCV_32));
+            put("riscv32imac-unknown-none-elf", new PlatformSpec(RISCV_32));
+            put("riscv32imc-unknown-none-elf", new PlatformSpec(RISCV_32));
+            put("riscv64gc-unknown-linux-gnu", new PlatformSpec(LINUX, RISCV_64, GLIBC));
+            put("riscv64gc-unknown-linux-musl", new PlatformSpec(LINUX, RISCV_64, MUSL));
+            put("riscv64gc-unknown-none-elf", new PlatformSpec(RISCV_64));
+            put("riscv64imac-unknown-none-elf", new PlatformSpec(RISCV_64));
+            put("s390x-unknown-linux-gnu", new PlatformSpec(LINUX, IBMZ_64, GLIBC));
+            put("s390x-unknown-linux-musl", new PlatformSpec(LINUX, IBMZ_64, MUSL));
+            put("sparc-unknown-linux-gnu", new PlatformSpec(LINUX, SPARC_32, GLIBC));
+            put("sparc64-unknown-linux-gnu", new PlatformSpec(LINUX, SPARC_64, GLIBC));
+            put("sparc64-unknown-netbsd", new PlatformSpec(NETBSD, SPARC_64));
+            put("sparc64-unknown-openbsd", new PlatformSpec(OPENBSD, SPARC_64));
+            put("sparcv9-sun-solaris", new PlatformSpec(SOLARIS, SPARC_64));
+            put("thumbv4t-none-eabi", new PlatformSpec());
+            put("thumbv6m-none-eabi", new PlatformSpec());
+            put("thumbv7a-pc-windows-msvc", new PlatformSpec(WINDOWS, MSVC));
+            put("thumbv7a-uwp-windows-msvc", new PlatformSpec(WINDOWS, MSVC));
+            put("thumbv7em-none-eabi", new PlatformSpec());
+            put("thumbv7em-none-eabihf", new PlatformSpec());
+            put("thumbv7m-none-eabi", new PlatformSpec());
+            put("thumbv7neon-linux-androideabi", new PlatformSpec(LINUX));
+            put("thumbv7neon-unknown-linux-gnueabihf", new PlatformSpec(LINUX, GLIBC));
+            put("thumbv7neon-unknown-linux-musleabihf", new PlatformSpec(LINUX, MUSL));
+            put("thumbv8m.base-none-eabi", new PlatformSpec());
+            put("thumbv8m.main-none-eabi", new PlatformSpec());
+            put("thumbv8m.main-none-eabihf", new PlatformSpec());
+            put("wasm32-unknown-emscripten", new PlatformSpec());
+            put("wasm32-unknown-unknown", new PlatformSpec());
+            put("wasm32-wasi", new PlatformSpec());
+            put("x86_64-apple-darwin", new PlatformSpec(DARWIN, X86_64));
+            put("x86_64-apple-ios", new PlatformSpec(DARWIN, X86_64));
+            put("x86_64-apple-ios-macabi", new PlatformSpec(DARWIN, X86_64));
+            put("x86_64-apple-tvos", new PlatformSpec(DARWIN, X86_64));
+            // Linux false positive (?) because fortanix ends in nix
+            put("x86_64-fortanix-unknown-sgx", new PlatformSpec(LINUX, X86_64));
+            put("x86_64-fuchsia", new PlatformSpec(FUCHSIA, X86_64));
+            put("x86_64-linux-android", new PlatformSpec(LINUX, X86_64));
+            put("x86_64-pc-solaris", new PlatformSpec(SOLARIS, X86_64));
+            put("x86_64-pc-windows-gnu", new PlatformSpec(WINDOWS, X86_64, GLIBC));
+            put("x86_64-pc-windows-msvc", new PlatformSpec(WINDOWS, X86_64, MSVC));
+            put("x86_64-sun-solaris", new PlatformSpec(SOLARIS, X86_64));
+            put("x86_64-unknown-dragonfly", new PlatformSpec(DRAGONFLYBSD, X86_64));
+            put("x86_64-unknown-freebsd", new PlatformSpec(FREEBSD, X86_64));
+            put("x86_64-unknown-haiku", new PlatformSpec(HAIKU, X86_64));
+            put("x86_64-unknown-hermit", new PlatformSpec(X86_64));
+            put("x86_64-unknown-illumos", new PlatformSpec(ILLUMOS, X86_64));
+            put("x86_64-unknown-l4re-uclibc", new PlatformSpec(X86_64, UCLIBC));
+            put("x86_64-unknown-linux-gnu", new PlatformSpec(LINUX, X86_64, GLIBC));
+            put("x86_64-unknown-linux-gnux32", new PlatformSpec(LINUX, X86_64, GLIBC));
+            put("x86_64-unknown-linux-musl", new PlatformSpec(LINUX, X86_64, MUSL));
+            put("x86_64-unknown-netbsd", new PlatformSpec(NETBSD, X86_64));
+            put("x86_64-unknown-none-hermitkernel", new PlatformSpec(X86_64));
+            put("x86_64-unknown-none-linuxkernel", new PlatformSpec(LINUX, X86_64));
+            put("x86_64-unknown-openbsd", new PlatformSpec(OPENBSD, X86_64));
+            put("x86_64-unknown-redox", new PlatformSpec(REDOX, X86_64));
+            put("x86_64-unknown-uefi", new PlatformSpec(X86_64));
+            put("x86_64-uwp-windows-gnu", new PlatformSpec(WINDOWS, X86_64, GLIBC));
+            put("x86_64-uwp-windows-msvc", new PlatformSpec(WINDOWS, X86_64, MSVC));
+            put("x86_64-wrs-vxworks", new PlatformSpec(VXWORKS, X86_64));
+        }};
+}
