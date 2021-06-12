@@ -13,9 +13,36 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 final class EnvTest {
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    private static @NotNull String ldd(final @NotNull File tempDir, final @NotNull String name, final @NotNull String @NotNull ... lines) throws IOException {
+        final File ldd = new File(tempDir, "ldd-" + name + ".bat");
+        ldd.createNewFile();
+        ldd.setExecutable(true);
+        try (final PrintWriter w = new PrintWriter(ldd, "UTF-8")) {
+            if (Os.isWindows()) {
+                w.write("@ECHO OFF\r\n");
+                for (final String line : lines) {
+                    w.write("ECHO \"");
+                    w.write(line);
+                    w.write("\"\r\n");
+                }
+            } else {
+                w.write("#!/usr/bin/env sh\n");
+                for (final String line : lines) {
+                    w.write("echo '");
+                    w.write(line);
+                    w.write("'\n");
+                }
+            }
+        }
+        return ldd.getAbsolutePath();
+    }
+
     @Test void bionic() {
         assertAll(
             () -> assertEquals(Env.BIONIC, Env.current(Os.ANDROID, "/non/existing/path")),
@@ -42,65 +69,42 @@ final class EnvTest {
 
     /** {@code docker run --rm alpine ldd --version} */
     @Test void musl(@TempDir final @NotNull File tempDir) throws IOException {
-        final File ldd = new File(tempDir, "ldd-musl");
-        //noinspection ResultOfMethodCallIgnored
-        ldd.createNewFile();
-        //noinspection ResultOfMethodCallIgnored
-        ldd.setExecutable(true);
-        try (final PrintWriter w = new PrintWriter(ldd, "UTF-8")) {
-            w.write(
-                "#!/usr/bin/env sh\n" +
-                    "echo 'musl libc (x86_64)'\n" +
-                    "echo 'Version 1.2.2'\n" +
-                    "echo 'Dynamic Program Loader'\n" +
-                    "echo 'Usage: /lib/ld-musl-x86_64.so.1 [options] [--] pathname'\n"
-            );
-        }
+        final String ldd = ldd(tempDir, "musl",
+            "musl libc (x86_64)" +
+                "Version 1.2.2" +
+                "Dynamic Program Loader" +
+                "Usage: /lib/ld-musl-x86_64.so.1 [options] [--] pathname"
+        );
 
         assertAll(
-            () -> assertEquals(Env.MUSL, Env.current(Os.LINUX, ldd.getAbsolutePath())),
-            () -> assertEquals(Env.MUSL, Env.currentOrNull(Os.LINUX, ldd.getAbsolutePath()))
+            () -> assertEquals(Env.MUSL, Env.current(Os.LINUX, ldd)),
+            () -> assertEquals(Env.MUSL, Env.currentOrNull(Os.LINUX, ldd))
         );
     }
 
     /** {@code docker run --rm alpine:3.10.0 ldd --version} */
     @Test void muslBug(@TempDir final @NotNull File tempDir) throws IOException {
-        final File ldd = new File(tempDir, "ldd-musl-bug");
-        //noinspection ResultOfMethodCallIgnored
-        ldd.createNewFile();
-        //noinspection ResultOfMethodCallIgnored
-        ldd.setExecutable(true);
-        try (final PrintWriter w = new PrintWriter(ldd, "UTF-8")) {
-            w.write("#!/usr/bin/env sh\necho '/lib/ld-musl-x86_64.so.1: cannot load --version: No such file or directory'\n");
-        }
+        final String ldd = ldd(tempDir, "musl-bug", "/lib/ld-musl-x86_64.so.1: cannot load --version: No such file or directory");
 
         assertAll(
-            () -> assertEquals(Env.MUSL, Env.current(Os.LINUX, ldd.getAbsolutePath())),
-            () -> assertEquals(Env.MUSL, Env.currentOrNull(Os.LINUX, ldd.getAbsolutePath()))
+            () -> assertEquals(Env.MUSL, Env.current(Os.LINUX, ldd)),
+            () -> assertEquals(Env.MUSL, Env.currentOrNull(Os.LINUX, ldd))
         );
     }
 
     /** {@code docker run --rm ubuntu ldd --version} */
     @Test void glibc(@TempDir final @NotNull File tempDir) throws IOException {
-        final File ldd = new File(tempDir, "ldd-glibc");
-        //noinspection ResultOfMethodCallIgnored
-        ldd.createNewFile();
-        //noinspection ResultOfMethodCallIgnored
-        ldd.setExecutable(true);
-        try (final PrintWriter w = new PrintWriter(ldd, "UTF-8")) {
-            w.write(
-                "#!/usr/bin/env sh\n" +
-                    "echo 'ldd (Ubuntu GLIBC 2.31-0ubuntu9.2) 2.31'\n" +
-                    "echo 'Copyright (C) 2020 Free Software Foundation, Inc.'\n" +
-                    "echo 'This is free software; see the source for copying conditions.  There is NO'\n" +
-                    "echo 'warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.'\n" +
-                    "echo 'Written by Roland McGrath and Ulrich Drepper.'\n"
-            );
-        }
+        final String ldd = ldd(tempDir, "glibc",
+            "ldd (Ubuntu GLIBC 2.31-0ubuntu9.2) 2.31",
+            "Copyright (C) 2020 Free Software Foundation, Inc.",
+            "This is free software; see the source for copying conditions.  There is NO",
+            "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.",
+            "Written by Roland McGrath and Ulrich Drepper."
+        );
 
         assertAll(
-            () -> assertEquals(Env.GLIBC, Env.current(Os.LINUX, ldd.getAbsolutePath())),
-            () -> assertEquals(Env.GLIBC, Env.currentOrNull(Os.LINUX, ldd.getAbsolutePath()))
+            () -> assertEquals(Env.GLIBC, Env.current(Os.LINUX, ldd)),
+            () -> assertEquals(Env.GLIBC, Env.currentOrNull(Os.LINUX, ldd))
         );
     }
 

@@ -121,34 +121,21 @@ public final class Platform implements Comparable<Platform>, Serializable {
      * Parses the given value and constructs a new {@link Platform} instance.
      *
      * <p>Parsing of a {@link Platform} <strong>always</strong> succeeds because
-     * {@code null} is used for the {@link #os} and {@link #arch} if the cannot
-     * be parsed. Use {@link #parseOrThrow} if this is not acceptable.
+     * {@code null} is used for the {@link #os} and {@link #arch} if they cannot
+     * be parsed.
      *
      * @param value to parse
      * @return new {@link Platform}
      */
-    @Contract(value = "_ -> new", pure = true)
+    @Contract(pure = true)
     public static @NotNull Platform parse(final @NotNull CharSequence value) {
         return new Platform(Os.parseOrNull(value), Arch.parseOrNull(value));
     }
 
     /**
-     * Parses the given value and constructs a new {@link Platform} instances.
-     *
-     * @param value to parse
-     * @return new {@link Platform}
-     * @throws UnsupportedPlatformException if parsing of {@link Os} or
-     *     {@link Arch} fails
-     */
-    @Contract(value = "_ -> new", pure = true)
-    public static @NotNull Platform parseOrThrow(final @NotNull CharSequence value) throws UnsupportedPlatformException {
-        return new Platform(Os.parse(value), Arch.parse(value));
-    }
-
-    /**
      * Gets all platforms.
      */
-    @Contract(value = "-> new", pure = true)
+    @Contract(pure = true)
     public static @NotNull Platform[] values() {
         final Os[] osValues = Os.values();
         final Arch[] archValues = Arch.values();
@@ -165,7 +152,7 @@ public final class Platform implements Comparable<Platform>, Serializable {
     /**
      * Transforms {@code UPPER_SNAKE_CASE} to {@code lower-dash-case}.
      */
-    @Contract(value = "_ -> new", pure = true)
+    @Contract(pure = true)
     private static @NotNull String id(final @NotNull String chars) {
         final int l = chars.length();
         final StringBuilder sb = new StringBuilder(l);
@@ -192,7 +179,7 @@ public final class Platform implements Comparable<Platform>, Serializable {
      * @throws NullPointerException if {@code chars} is {@code null}
      * @see #normalize(CharSequence, boolean)
      */
-    @Contract(value = "_ -> new", pure = true)
+    @Contract(pure = true)
     static @NotNull String normalize(final @NotNull CharSequence chars) {
         return normalize(chars, false);
     }
@@ -207,7 +194,7 @@ public final class Platform implements Comparable<Platform>, Serializable {
      * @return normalized string
      * @throws NullPointerException if {@code chars} is {@code null}
      */
-    @Contract(value = "_, _ -> new", pure = true)
+    @Contract(pure = true)
     static @NotNull String normalize(final @NotNull CharSequence chars, final boolean strip) {
         final int l = chars.length();
         if (l == 0) {

@@ -93,12 +93,12 @@ public enum Env {
      * @return current env
      * @throws UnsupportedPlatformException if unknown
      */
-    @Contract(value = "-> new", pure = true)
+    @Contract(pure = true)
     public static @NotNull Env current() throws UnsupportedPlatformException {
         return current(Os.current(), null);
     }
 
-    @Contract(value = "_, _ -> new", pure = true)
+    @Contract(pure = true)
     @TestOnly
     @VisibleForTesting
     static @NotNull Env current(final @NotNull Os os, final @Nullable String lddPath) throws UnsupportedPlatformException {
@@ -133,7 +133,7 @@ public enum Env {
      * @throws NullPointerException if value is {@code null}
      * @throws UnsupportedPlatformException if env is unknown
      */
-    @Contract(value = "_ -> new", pure = true)
+    @Contract(pure = true)
     public static @NotNull Env parse(final @NotNull CharSequence value) throws UnsupportedPlatformException {
         final Env env = parseOrNull(value);
         if (env == null) {
@@ -202,7 +202,7 @@ public enum Env {
      * @return first lowercased line from {@code ldd --version}, or an empty
      *     string if execution fails (e.g., {@code ldd} is not in {@code PATH})
      */
-    @Contract(value = "_ -> new", pure = true)
+    @Contract(pure = true)
     @VisibleForTesting
     static @NotNull String ldd(final @Nullable String lddPath) {
         final @NotNull Process p;

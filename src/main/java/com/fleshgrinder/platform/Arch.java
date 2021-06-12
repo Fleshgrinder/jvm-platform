@@ -201,7 +201,7 @@ public enum Arch {
      * @return current architecture
      * @throws UnsupportedPlatformException if unknown
      */
-    @Contract(value = "-> new", pure = true)
+    @Contract(pure = true)
     public static @NotNull Arch current() throws UnsupportedPlatformException {
         final Arch arch = currentOrNull();
         if (arch == null) {
@@ -243,7 +243,6 @@ public enum Arch {
      * @return current architecture or {@code null} if unknown
      */
     @Contract(pure = true)
-    @SuppressWarnings("ConstantConditions")
     public static @Nullable Arch currentOrNull() {
         final @NotNull String it = System.getProperty("os.arch", "");
         switch (normalize(it, true)) {
@@ -303,7 +302,7 @@ public enum Arch {
      * @throws NullPointerException if value is {@code null}
      * @throws UnsupportedPlatformException if unknown
      */
-    @Contract(value = "_ -> new", pure = true)
+    @Contract(pure = true)
     public static @NotNull Arch parse(final @NotNull CharSequence value) throws UnsupportedPlatformException {
         final Arch arch = parseOrNull(value);
         if (arch == null) {
@@ -323,10 +322,10 @@ public enum Arch {
     public static @Nullable Arch parseOrNull(final @NotNull CharSequence value) {
         if (value.length() > 0) {
             final String it = normalize(value);
-            if (it.matches(".*(x86-?64|amd64|em64t|ia32e|(?<!nvpt)x64|[89]86).*")) {
+            if (it.matches(".*(x86-?64|amd64|em64t|ia32e|(?<!nvpt)x64|[89]86|win64).*")) {
                 return X86_64;
             }
-            if (it.matches(".*((ia|x)32|(x|[1-7])86|pentium).*")) {
+            if (it.matches(".*((ia|x)32|(x|[1-7])86|pentium|win32).*")) {
                 return X86_32;
             }
             if (it.matches(".*aarch-?(64)?-?(be|eb).*")) {
@@ -377,13 +376,13 @@ public enum Arch {
             if (it.matches(".*(power-?(pc|rs)?|ppc).*")) {
                 return PPC_32;
             }
-            if (it.matches(".*mips-?(64-?(le|el)|(le|el)-?64).*")) {
+            if (it.matches(".*mips(isa)?-?(64-?(r\\d-?)?(le|el)|(le|el)-?64).*")) {
                 return MIPS_64_LE;
             }
-            if (it.matches(".*mips-?((32)?-?(le|el)|(le|el)).*")) {
+            if (it.matches(".*mips(isa)?-?((32)?-?(r\\d-?)?(le|el)|(le|el)).*")) {
                 return MIPS_32_LE;
             }
-            if (it.matches(".*mips-?64.*")) {
+            if (it.matches(".*mips(isa)?-?64.*")) {
                 return MIPS_64;
             }
             if (it.contains("mips")) {

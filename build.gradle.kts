@@ -1,9 +1,12 @@
 plugins {
     id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
+    id("idea")
     id("java-library")
     id("maven-publish")
     id("signing")
 }
+
+val javaVersion = file(".java-version").readText().trim()
 
 dependencies {
     val jba = "21.0.0"
@@ -30,9 +33,21 @@ tasks.test.configure {
     systemProperty("java.io.tmpdir", temporaryDir.absolutePath)
 }
 
+idea {
+    project {
+        jdkName = javaVersion
+        vcs = "Git"
+        setLanguageLevel(javaVersion)
+    }
+    module {
+        isDownloadJavadoc = false
+        isDownloadSources = !System.getenv().containsKey("CI")
+    }
+}
+
 java {
-    targetCompatibility = JavaVersion.VERSION_1_8
-    sourceCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.toVersion(javaVersion)
+    targetCompatibility = sourceCompatibility
     withJavadocJar()
     withSourcesJar()
 }

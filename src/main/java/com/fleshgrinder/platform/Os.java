@@ -172,7 +172,7 @@ public enum Os {
      * @return current operating system
      * @throws UnsupportedPlatformException if unknown
      */
-    @Contract(value = "-> new", pure = true)
+    @Contract(pure = true)
     public static @NotNull Os current() throws UnsupportedPlatformException {
         final Os os = currentOrNull();
         if (os == null) {
@@ -195,7 +195,6 @@ public enum Os {
      * @return current operating system or {@code null} if unknown
      */
     @Contract(pure = true)
-    @SuppressWarnings("ConstantConditions")
     public static @Nullable Os currentOrNull() {
         if (isWindows()) {
             return WINDOWS;
@@ -256,7 +255,7 @@ public enum Os {
      * @throws NullPointerException if value is {@code null}
      * @throws UnsupportedPlatformException if unknown
      */
-    @Contract(value = "_ -> new", pure = true)
+    @Contract(pure = true)
     public static @NotNull Os parse(final @NotNull CharSequence value) throws UnsupportedPlatformException {
         final Os os = parseOrNull(value);
         if (os == null) {
@@ -286,7 +285,7 @@ public enum Os {
             // `osx` is considered Darwin even standalone but `os-x` is not,
             // because it would also match `os-x86` which leads to too many
             // false positives.
-            if (it.matches(".*(apple|darwin|(?<!(32|64)i)mac|osx).*")) {
+            if (it.matches(".*(apple|darwin|(?<!(32|64)i)mac|osx|ios).*")) {
                 return DARWIN;
             }
             // MUST come after darWIN!
@@ -350,7 +349,7 @@ public enum Os {
      * @return extension for executables with leading period or an empty string
      *     if not applicable on this platform
      */
-    @Contract(value = "-> new", pure = true)
+    @Contract(pure = true)
     public @NotNull String getExecutableExtension() {
         if (this == WINDOWS) {
             return ".exe";
@@ -362,7 +361,7 @@ public enum Os {
      * @param path to append the extension to
      * @return path with {@link #getExecutableExtension}
      */
-    @Contract(value = "_ -> new", pure = true)
+    @Contract(pure = true)
     public @NotNull String withExecutableExtension(final @NotNull String path) {
         return path + getExecutableExtension();
     }
@@ -371,7 +370,7 @@ public enum Os {
      * @param file to append the extension to
      * @return file with {@link #getExecutableExtension}
      */
-    @Contract(value = "_ -> new", pure = true)
+    @Contract(pure = true)
     public @NotNull File withExecutableExtension(final @NotNull File file) {
         return new File(file.getParentFile(), withExecutableExtension(file.getName()));
     }
@@ -379,7 +378,7 @@ public enum Os {
     /**
      * @return extension for link libraries with leading period on this platform
      */
-    @Contract(value = "-> new", pure = true)
+    @Contract(pure = true)
     public @NotNull String getLinkLibraryExtension() {
         if (this == WINDOWS) {
             return ".lib";
@@ -391,7 +390,7 @@ public enum Os {
      * @param path to append the extension to
      * @return path with {@link #getLinkLibraryExtension}
      */
-    @Contract(value = "_ -> new", pure = true)
+    @Contract(pure = true)
     public @NotNull String withLinkLibraryExtension(final @NotNull String path) {
         return path + getLinkLibraryExtension();
     }
@@ -400,7 +399,7 @@ public enum Os {
      * @param file to append the extension to
      * @return file with {@link #getLinkLibraryExtension}
      */
-    @Contract(value = "_ -> new", pure = true)
+    @Contract(pure = true)
     public @NotNull File withLinkLibraryExtension(final @NotNull File file) {
         return new File(file.getParentFile(), withLinkLibraryExtension(file.getName()));
     }
@@ -409,7 +408,7 @@ public enum Os {
      * @return extension for shared libraries with leading period on this
      *     platform
      */
-    @Contract(value = "-> new", pure = true)
+    @Contract(pure = true)
     public @NotNull String getSharedLibraryExtension() {
         if (this == WINDOWS) {
             return ".dll";
@@ -424,7 +423,7 @@ public enum Os {
      * @param path to append the extension to
      * @return path with {@link #getSharedLibraryExtension}
      */
-    @Contract(value = "_ -> new", pure = true)
+    @Contract(pure = true)
     public @NotNull String withSharedLibraryExtension(final @NotNull String path) {
         return path + getSharedLibraryExtension();
     }
@@ -433,7 +432,7 @@ public enum Os {
      * @param file to append the extension to
      * @return file with {@link #getSharedLibraryExtension}
      */
-    @Contract(value = "_ -> new", pure = true)
+    @Contract(pure = true)
     public @NotNull File withSharedLibraryExtension(final @NotNull File file) {
         return new File(file.getParentFile(), withSharedLibraryExtension(file.getName()));
     }
@@ -442,7 +441,7 @@ public enum Os {
      * @return extension for static libraries with leading period on this
      *     platform
      */
-    @Contract(value = "-> new", pure = true)
+    @Contract(pure = true)
     public @NotNull String getStaticLibraryExtension() {
         if (this == WINDOWS) {
             return ".lib";
@@ -454,7 +453,7 @@ public enum Os {
      * @param path to append the extension to
      * @return path with {@link #getStaticLibraryExtension}
      */
-    @Contract(value = "_ -> new", pure = true)
+    @Contract(pure = true)
     public @NotNull String withStaticLibraryExtension(final @NotNull String path) {
         return path + getStaticLibraryExtension();
     }
@@ -463,7 +462,7 @@ public enum Os {
      * @param file to append the extension to
      * @return file with {@link #getStaticLibraryExtension}
      */
-    @Contract(value = "_ -> new", pure = true)
+    @Contract(pure = true)
     public @NotNull File withStaticLibraryExtension(final @NotNull File file) {
         return new File(file.getParentFile(), withStaticLibraryExtension(file.getName()));
     }
