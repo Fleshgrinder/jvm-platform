@@ -12,7 +12,7 @@ jobs:
         with:
           distribution: zulu
           java-version: ${{ matrix.java }}
-      - uses: actions/gradle-cache@v1
+      - uses: burrunan/gradle-cache-action@v1
         with:
           job-id: ${{ matrix.os }}-j${{ matrix.java }}
           arguments: check
