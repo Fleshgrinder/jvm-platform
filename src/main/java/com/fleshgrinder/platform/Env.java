@@ -1,8 +1,11 @@
 package com.fleshgrinder.platform;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
+import org.jetbrains.annotations.VisibleForTesting;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 
@@ -78,8 +81,8 @@ public enum Env {
     /**
      * µClibc
      *
-     * @see <a href="https://en.wikipedia.org/wiki/UClibc">Wikipedia</a>, usually
-     * @see <a href="https://uclibc-ng.org/">uClibc-ng</a>.
+     * @see <a href="https://en.wikipedia.org/wiki/UClibc">Wikipedia</a>
+     * @see <a href="https://uclibc-ng.org/">uClibc-ng</a>
      */
     UCLIBC;
 

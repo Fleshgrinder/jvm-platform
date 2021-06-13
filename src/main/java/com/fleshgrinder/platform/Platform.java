@@ -7,20 +7,19 @@ import org.jetbrains.annotations.Nullable;
 import java.io.Serializable;
 
 /**
- * https://github.com/golang/go/blob/master/src/go/build/syslist.go
- * https://github.com/java-native-access/jna/blob/master/src/com/sun/jna/Platform.java
- * https://github.com/trustin/os-maven-plugin/blob/master/src/main/java/kr/motd/maven/os/Detector.java
- * https://doc.rust-lang.org/nightly/rustc/platform-support.html
- * http://lopica.sourceforge.net/os.html
- * https://jvm-gaming.org/t/possible-values-for-system-property-os-arch-and-os-name/27670/4
- * https://git.eclipse.org/c/equinox/rt.equinox.framework.git/tree/bundles/org.eclipse.osgi/container/src/org/eclipse/osgi/internal/framework/osname.aliases
- * https://github.com/xerial/snappy-java/blob/develop/src/main/java/org/xerial/snappy/OSInfo.java
- * https://github.com/openjdk/jdk/blob/master/make/autoconf/platform.m4
- * https://github.com/apache/commons-crypto/blob/master/src/main/java/org/apache/commons/crypto/OsInfo.java#L28
- * https://github.com/apache/commons-lang/blob/master/src/main/java/org/apache/commons/lang3/ArchUtils.java
+ * A platform is the combination of an {@link Os} and its {@link Arch}.
  *
- * UNIXProcess.Platform#get()
- * UNIXProcess.Platform#helperPath()
+ * <p>The platform contains both the OS and architecture because both are
+ * required to make decisions for a native platform. For instance, Windows can
+ * execute 32-bit software on a 64-bit architecture and Solaris can even execute
+ * 64-bit software on a 32-bit architecture, however, BSD does not allow this.
+ * Hence, looking at the OS and architecture in isolation is often not good
+ * enough.
+ *
+ * <p>The {@link Env} on the other hand is not included in the platform because
+ * it is only useful in certain special cases. It is also more involving to
+ * determine compared to the OS and architecture and should thus only be used if
+ * really required.
  */
 public final class Platform implements Comparable<Platform>, Serializable {
     private static final long serialVersionUID = 1;
@@ -30,7 +29,8 @@ public final class Platform implements Comparable<Platform>, Serializable {
     private final @NotNull String id;
 
     /**
-     * Constructs new {@link Platform}.
+     * @param os of the platform, if any
+     * @param arch of the platform, if any
      */
     public Platform(final @Nullable Os os, final @Nullable Arch arch) {
         this.os = os;
@@ -39,41 +39,38 @@ public final class Platform implements Comparable<Platform>, Serializable {
     }
 
     /**
-     * Constructs new {@link Platform} without {@link Os} and {@link Arch}.
-     *
-     * <p>Both {@link #os} and {@link #arch} will be {@code null} and the
-     * {@link #id} is set to {@code unknown-unknown-unknown}.
+     * Constructs new platform without {@link Os} and {@link Arch}.
      */
     public Platform() {
         this(null, null);
     }
 
     /**
-     * Constructs new {@link Platform} without {@link Arch}.
+     * Constructs new platform without {@link Arch}.
      *
-     * <p>The {@link #arch} will be {@code null} and the {@link #id} will have
-     * {@code unknown-unknown} in place of the architecture.
+     * @param os of the platform
      */
     public Platform(final @Nullable Os os) {
         this(os, null);
     }
 
     /**
-     * Constructs new {@link Platform} without {@link Os}.
+     * Constructs new platform without {@link Os}.
      *
-     * <p>The {@link #os} will be {@code null} and the {@link #id} will have
-     * {@code unknown} in place of the OS.
+     * @param arch of the platform
      */
     public Platform(final @Nullable Arch arch) {
         this(null, arch);
     }
 
     /**
-     * Gets the {@link Platform} of the current JVM process.
+     * Gets the platform of the current JVM process.
      *
-     * <p>Getting the current {@link Platform} <strong>always</strong> succeeds
+     * <p>Getting the current platform <strong>always</strong> succeeds
      * because {@code null} is used for the {@link #os} and {@link #arch} if
      * they cannot be determined.
+     *
+     * @return the current platform
      */
     @Contract(pure = true)
     public static @NotNull Platform current() {
@@ -81,14 +78,14 @@ public final class Platform implements Comparable<Platform>, Serializable {
     }
 
     /**
-     * Parses the given value and constructs a new {@link Platform} instance.
+     * Parses the given value and constructs a new platform instance.
      *
-     * <p>Parsing of a {@link Platform} <strong>always</strong> succeeds because
+     * <p>Parsing of a platform <strong>always</strong> succeeds because
      * {@code null} is used for the {@link #os} and {@link #arch} if they cannot
      * be parsed.
      *
      * @param value to parse
-     * @return new {@link Platform}
+     * @return new platform
      */
     @Contract(pure = true)
     public static @NotNull Platform parse(final @NotNull CharSequence value) {
@@ -97,6 +94,8 @@ public final class Platform implements Comparable<Platform>, Serializable {
 
     /**
      * Gets all platforms.
+     *
+     * @return all possible platforms.
      */
     @Contract(pure = true)
     public static @NotNull Platform[] values() {
@@ -109,7 +108,7 @@ public final class Platform implements Comparable<Platform>, Serializable {
     }
 
     /**
-     * Get the operating system of this platform, if known.
+     * @return operating system of this platform, if known
      */
     @Contract(pure = true)
     public @Nullable Os getOs() {
@@ -117,7 +116,7 @@ public final class Platform implements Comparable<Platform>, Serializable {
     }
 
     /**
-     * Get the architecture of this platform, if known.
+     * @return architecture of this platform, if known
      */
     @Contract(pure = true)
     public @Nullable Arch getArch() {
@@ -156,6 +155,8 @@ public final class Platform implements Comparable<Platform>, Serializable {
      *     <li>{@code linux-arm-32-be}
      *     <li>{@code darwin-ppc-64-le}
      * </ul>
+     *
+     * @return machine-readable identifier of this platform
      */
     @Contract(pure = true)
     public @NotNull String getId() {

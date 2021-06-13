@@ -370,8 +370,10 @@ public enum Os {
     @Contract(pure = true)
     public @NotNull String getSharedLibraryExtension() {
         switch (this) {
-            case WINDOWS: return ".dll";
-            case DARWIN: return ".dylib";
+            case WINDOWS:
+                return ".dll";
+            case DARWIN:
+                return ".dylib";
         }
         return ".so";
     }
