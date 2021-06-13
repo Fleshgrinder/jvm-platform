@@ -76,9 +76,9 @@ final class PlatformTest {
     }
 
     @TestFactory Stream<DynamicTest> values() {
-        return Arrays.stream(Platform.values()).map(platform -> dynamicTest(platform.id, () -> assertAll(
-            () -> assertNotNull(platform.os),
-            () -> assertNotNull(platform.arch)
+        return Arrays.stream(Platform.values()).map(platform -> dynamicTest(platform.getId(), () -> assertAll(
+            () -> assertNotNull(platform.getOs()),
+            () -> assertNotNull(platform.getArch())
         )));
     }
 
@@ -494,8 +494,8 @@ final class PlatformTest {
     ) {
         final Platform parse = Platform.parse(value);
         assertAll(
-            () -> assertEquals(os, parse.os, "parse.os"),
-            () -> assertEquals(arch, parse.arch, "parse.arch"),
+            () -> assertEquals(os, parse.getOs(), "parse.os"),
+            () -> assertEquals(arch, parse.getArch(), "parse.arch"),
             () -> {
                 if (env != null) assertEquals(env, Env.parse(value), "env");
             }
@@ -503,7 +503,7 @@ final class PlatformTest {
     }
 
     static Stream<Arguments> jvmPlatforms() {
-        return Arrays.stream(Platform.values()).map(it -> Arguments.of(it.os, it.arch, null, it.id));
+        return Arrays.stream(Platform.values()).map(it -> Arguments.of(it.getOs(), it.getArch(), null, it.getId()));
     }
 
     static Iterator<Arguments> jvmPlatformsWithEnvs() {
@@ -521,7 +521,7 @@ final class PlatformTest {
             @Override public Arguments next() {
                 final Platform platform = platforms[i];
                 final Env env = envs[j];
-                return Arguments.of(platform.os, platform.arch, env, platform.id + "-" + env.name());
+                return Arguments.of(platform.getOs(), platform.getArch(), env, platform.getId() + "-" + env.name());
             }
         };
     }

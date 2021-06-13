@@ -1,3 +1,4 @@
+name: gradle-wrapper-validation
 on: [push, pull_request]
 jobs:
   validation:

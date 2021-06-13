@@ -1,9 +1,12 @@
 plugins {
-    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
     id("idea")
     id("java-library")
+
+    id("jacoco")
+
     id("maven-publish")
     id("signing")
+    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
 }
 
 val javaVersion = file(".java-version").readText().trim()
@@ -23,14 +26,27 @@ dependencies {
 
 repositories.mavenCentral()
 
-tasks.jar.configure {
-    isPreserveFileTimestamps = false
-    isReproducibleFileOrder = true
-}
+tasks {
+    jar.configure {
+        isPreserveFileTimestamps = false
+        isReproducibleFileOrder = true
+    }
 
-tasks.test.configure {
-    useJUnitPlatform()
-    systemProperty("java.io.tmpdir", temporaryDir.absolutePath)
+    test.configure {
+        useJUnitPlatform()
+        systemProperty("java.io.tmpdir", temporaryDir.absolutePath)
+    }
+
+    jacocoTestReport.configure {
+        dependsOn(test)
+        reports {
+            xml.isEnabled = System.getenv().containsKey("CI")
+        }
+    }
+
+    check.configure {
+        dependsOn(jacocoTestReport)
+    }
 }
 
 idea {

@@ -6,7 +6,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 
-import static com.fleshgrinder.platform.Platform.normalize;
+import static com.fleshgrinder.platform.Utils.id;
+import static com.fleshgrinder.platform.Utils.normalize;
 
 /**
  * Operating System
@@ -175,9 +176,7 @@ public enum Os {
     @Contract(pure = true)
     public static @NotNull Os current() throws UnsupportedPlatformException {
         final Os os = currentOrNull();
-        if (os == null) {
-            throw UnsupportedPlatformException.fromSystemProperty(Os.class, "os.name");
-        }
+        if (os == null) throw UnsupportedPlatformException.fromSystemProperty(Os.class, "os.name");
         return os;
     }
 
@@ -196,9 +195,7 @@ public enum Os {
      */
     @Contract(pure = true)
     public static @Nullable Os currentOrNull() {
-        if (isWindows()) {
-            return WINDOWS;
-        }
+        if (isWindows()) return WINDOWS;
         final @NotNull String it = System.getProperty("os.name", "");
         switch (normalize(it, true)) {
             case "aix":
@@ -258,9 +255,7 @@ public enum Os {
     @Contract(pure = true)
     public static @NotNull Os parse(final @NotNull CharSequence value) throws UnsupportedPlatformException {
         final Os os = parseOrNull(value);
-        if (os == null) {
-            throw UnsupportedPlatformException.fromValue(Os.class, value);
-        }
+        if (os == null) throw UnsupportedPlatformException.fromValue(Os.class, value);
         return os;
     }
 
@@ -273,76 +268,44 @@ public enum Os {
     public static @Nullable Os parseOrNull(final @NotNull CharSequence value) {
         if (value.length() > 0) {
             final @NotNull String it = normalize(value);
-            // Android should come before Linux because they might come together
-            if (it.contains("android")) {
-                return ANDROID;
-            }
-            if (it.matches(".*n[iu]x.*")) {
-                return LINUX;
-            }
+            // Android MUST come before Linux because they often come together
+            if (it.contains("android")) return ANDROID;
+            if (it.matches(".*n[iu]x.*")) return LINUX;
             // (32|64)imac as in RV(32|64)IMAC ISA may be embedded in a platform
             // identifier but is not necessarily targeting Darwin.
             // `osx` is considered Darwin even standalone but `os-x` is not,
             // because it would also match `os-x86` which leads to too many
             // false positives.
-            if (it.matches(".*(apple|darwin|(?<!(32|64)i)mac|osx|ios).*")) {
-                return DARWIN;
-            }
+            if (it.matches(".*(apple|darwin|(?<!(32|64)i)mac|osx|ios).*")) return DARWIN;
             // MUST come after darWIN!
             // w32 and w64 are from gcc (actually mingw-w64)
-            if (it.matches(".*w(in|32|64).*")) {
-                return WINDOWS;
-            }
-            if (it.contains("aix")) {
-                return AIX;
-            }
-            if (it.contains("dragonfly")) {
-                return DRAGONFLYBSD;
-            }
-            if (it.contains("freebsd")) {
-                return FREEBSD;
-            }
-            if (it.contains("fuchsia")) {
-                return FUCHSIA;
-            }
-            if (it.contains("haiku")) {
-                return HAIKU;
-            }
-            if (it.contains("netbsd")) {
-                return NETBSD;
-            }
-            if (it.contains("openbsd")) {
-                return OPENBSD;
-            }
-            if (it.contains("plan9")) {
-                return PLAN9;
-            }
-            if (it.contains("redox")) {
-                return REDOX;
-            }
-            if (it.contains("vxworks")) {
-                return VXWORKS;
-            }
-            if (it.matches(".*hp-?ux.*")) {
-                return HPUX;
-            }
-            if (it.matches(".*(ibm-?i|os400[^0-9]).*")) {
-                return IBMI;
-            }
-            if (it.matches(".*illum-?os.*")) {
-                return ILLUMOS;
-            }
-            if (it.matches(".*(qnx|procnto).*")) {
-                return QNX;
-            }
-            if (it.matches(".*(s(olaris|un-?os)).*")) {
-                return SOLARIS;
-            }
-            if (it.matches(".*z-?os.*")) {
-                return ZOS;
-            }
+            if (it.matches(".*w(in|32|64).*")) return WINDOWS;
+            if (it.contains("aix")) return AIX;
+            if (it.contains("dragonfly")) return DRAGONFLYBSD;
+            if (it.contains("freebsd")) return FREEBSD;
+            if (it.contains("fuchsia")) return FUCHSIA;
+            if (it.contains("haiku")) return HAIKU;
+            if (it.contains("netbsd")) return NETBSD;
+            if (it.contains("openbsd")) return OPENBSD;
+            if (it.contains("plan9")) return PLAN9;
+            if (it.contains("redox")) return REDOX;
+            if (it.contains("vxworks")) return VXWORKS;
+            if (it.matches(".*hp-?ux.*")) return HPUX;
+            if (it.matches(".*(ibm-?i|os400[^0-9]).*")) return IBMI;
+            if (it.matches(".*illum-?os.*")) return ILLUMOS;
+            if (it.matches(".*(qnx|procnto).*")) return QNX;
+            if (it.matches(".*(s(olaris|un-?os)).*")) return SOLARIS;
+            if (it.matches(".*z-?os.*")) return ZOS;
         }
         return null;
+    }
+
+    /**
+     * @return {@link #name()} in {@code lower-dash-case}
+     */
+    @Contract(pure = true)
+    public @NotNull String getId() {
+        return id(name());
     }
 
     /**
@@ -351,9 +314,7 @@ public enum Os {
      */
     @Contract(pure = true)
     public @NotNull String getExecutableExtension() {
-        if (this == WINDOWS) {
-            return ".exe";
-        }
+        if (this == WINDOWS) return ".exe";
         return "";
     }
 
@@ -380,9 +341,7 @@ public enum Os {
      */
     @Contract(pure = true)
     public @NotNull String getLinkLibraryExtension() {
-        if (this == WINDOWS) {
-            return ".lib";
-        }
+        if (this == WINDOWS) return ".lib";
         return ".so";
     }
 
@@ -410,11 +369,9 @@ public enum Os {
      */
     @Contract(pure = true)
     public @NotNull String getSharedLibraryExtension() {
-        if (this == WINDOWS) {
-            return ".dll";
-        }
-        if (this == DARWIN) {
-            return ".dylib";
+        switch (this) {
+            case WINDOWS: return ".dll";
+            case DARWIN: return ".dylib";
         }
         return ".so";
     }
@@ -443,9 +400,7 @@ public enum Os {
      */
     @Contract(pure = true)
     public @NotNull String getStaticLibraryExtension() {
-        if (this == WINDOWS) {
-            return ".lib";
-        }
+        if (this == WINDOWS) return ".lib";
         return ".a";
     }
 

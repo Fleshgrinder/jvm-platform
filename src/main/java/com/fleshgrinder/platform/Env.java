@@ -6,7 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 
-import static com.fleshgrinder.platform.Platform.normalize;
+import static com.fleshgrinder.platform.Utils.id;
+import static com.fleshgrinder.platform.Utils.normalize;
 
 /**
  * Environment
@@ -136,9 +137,7 @@ public enum Env {
     @Contract(pure = true)
     public static @NotNull Env parse(final @NotNull CharSequence value) throws UnsupportedPlatformException {
         final Env env = parseOrNull(value);
-        if (env == null) {
-            throw UnsupportedPlatformException.fromValue(Env.class, value);
-        }
+        if (env == null) throw UnsupportedPlatformException.fromValue(Env.class, value);
         return env;
     }
 
@@ -151,26 +150,16 @@ public enum Env {
     public static @Nullable Env parseOrNull(final @NotNull CharSequence value) {
         if (value.length() > 0) {
             final String it = normalize(value);
-            for (final Env env : Env.values()) {
-                if (it.contains(normalize(env.name()))) {
-                    return env;
-                }
-            }
+            for (final Env env : Env.values()) if (it.contains(env.getId())) return env;
             // Matching `gnu` is dangerous because of the GNU operating systems
             // that sometimes identify themselves only with GNU as well, but we
             // need `gnu` here because of gcc. Future has to show if this is a
             // real world problem, or not.
             //
             // https://en.wikipedia.org/wiki/GNU_variants
-            if (it.matches(".*g(cc|nu).*")) {
-                return GLIBC;
-            }
-            if (it.matches(".*(apple|bsd|darwin|mac|osx).*")) {
-                return BSDLIBC;
-            }
-            if (it.matches(".*(crtdll|ucrt|vcruntime|vs).*")) {
-                return MSVC;
-            }
+            if (it.matches(".*g(cc|nu).*")) return GLIBC;
+            if (it.matches(".*(apple|bsd|darwin|mac|osx).*")) return BSDLIBC;
+            if (it.matches(".*(crtdll|ucrt|vcruntime|vs|win).*")) return MSVC;
         }
         return null;
     }
@@ -184,14 +173,12 @@ public enum Env {
         switch (os) {
             case ANDROID:
                 return BIONIC;
-
             case DARWIN:
             case DRAGONFLYBSD:
             case FREEBSD:
             case NETBSD:
             case OPENBSD:
                 return BSDLIBC;
-
             case WINDOWS:
                 return MSVC;
         }
@@ -208,28 +195,34 @@ public enum Env {
         final @NotNull Process p;
         try {
             p = new ProcessBuilder(lddPath == null ? "ldd" : lddPath, "--version").start();
-        } catch (final IOException ignored) {
+        } catch (final Throwable ignored) {
             return "";
         }
 
         final @NotNull StringBuilder sb = new StringBuilder(40);
         try {
             if (p.waitFor(1, TimeUnit.SECONDS)) {
-                final @NotNull InputStream s = p.getInputStream();
-                int c;
-                while ((c = s.read()) != -1 && c != '\n') {
-                    if ('A' <= c && c <= 'Z') {
-                        sb.append((char) (c + 32));
-                    } else {
-                        sb.append((char) c);
+                try (final @NotNull InputStream s = p.getInputStream()) {
+                    int c;
+                    while ((c = s.read()) != -1 && c != '\n') {
+                        if ('A' <= c && c <= 'Z') sb.append((char) (c + 32));
+                        else sb.append((char) c);
                     }
                 }
             }
-        } catch (final InterruptedException | IOException ignored) {
+        } catch (final Throwable ignored) {
             // fall through
         }
 
         p.destroyForcibly(); // closes all streams
         return sb.toString();
+    }
+
+    /**
+     * @return {@link #name()} in {@code lower-dash-case}
+     */
+    @Contract(pure = true)
+    public @NotNull String getId() {
+        return id(name());
     }
 }

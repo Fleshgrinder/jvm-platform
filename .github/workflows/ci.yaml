@@ -1,6 +1,7 @@
+name: ci
 on: [ push, pull_request ]
 jobs:
-  macos:
+  test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -16,3 +17,7 @@ jobs:
         with:
           job-id: ${{ matrix.os }}-j${{ matrix.java }}
           arguments: check
+      - uses: codecov/codecov-action@v1
+        with:
+          files: build/reports/jacoco/test/jacocoTestReport.xml
+          name: ${{ matrix.os }}-j${{ matrix.java }}

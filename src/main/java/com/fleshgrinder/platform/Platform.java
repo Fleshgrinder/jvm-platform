@@ -25,50 +25,9 @@ import java.io.Serializable;
 public final class Platform implements Comparable<Platform>, Serializable {
     private static final long serialVersionUID = 1;
 
-    /**
-     * Get the operating system of this platform, if known.
-     */
-    public final @Nullable Os os;
-
-    /**
-     * Get the architecture of this platform, if known.
-     */
-    public final @Nullable Arch arch;
-
-    /**
-     * Gets the canonical identifier of this platform.
-     *
-     * <p>The canonical identifier is a machine readable and unique way to
-     * identify a platform. The {@link Env} is not part of the platform because
-     * it is only useful in certain situations and a target platform can have
-     * support for more than one {@link Env} at the same time but it cannot be
-     * detected if this is the case, or not. Hence, a platform is made up only
-     * of the {@link Os} and {@link Arch} of which both are fixed.
-     *
-     * <h2>Anatomy (ABNF)</h2>
-     * <pre>
-     * ID = OS "-" ARCH "-" BITNESS ["-" ENDIANESS]
-     *
-     * OS = SEGMENT
-     * ARCH = SEGMENT
-     * BITNESS = 1*DIGIT
-     * ENDIANESS = "be" / "le" ; Big Endian / Little Endian
-     *
-     * SEGMENT = LOWER *(LOWER / DIGIT) ; [a-z][a-z0-9]*
-     * LOWER = %x61–7A ; a-z
-     * </pre>
-     *
-     * <h2>Examples</h2>
-     * <ul>
-     *     <li>{@code unknown-unknown-unknown}
-     *     <li>{@code unknown-x86-64}
-     *     <li>{@code linux-unknown-unknown}
-     *     <li>{@code linux-x86-64}
-     *     <li>{@code linux-arm-32-be}
-     *     <li>{@code darwin-ppc-64-le}
-     * </ul>
-     */
-    public final @NotNull String id;
+    private final @Nullable Os os;
+    private final @Nullable Arch arch;
+    private final @NotNull String id;
 
     /**
      * Constructs new {@link Platform}.
@@ -76,15 +35,7 @@ public final class Platform implements Comparable<Platform>, Serializable {
     public Platform(final @Nullable Os os, final @Nullable Arch arch) {
         this.os = os;
         this.arch = arch;
-        if (os == null && arch == null) {
-            this.id = "unknown-unknown-unknown";
-        } else if (os == null) {
-            this.id = "unknown-" + id(arch.name());
-        } else if (arch == null) {
-            this.id = id(os.name()) + "-unknown-unknown";
-        } else {
-            this.id = id(os.name()) + "-" + id(arch.name());
-        }
+        this.id = (os == null ? "unknown" : os.getId()) + "-" + (arch == null ? "unknown-unknown" : arch.getId());
     }
 
     /**
@@ -118,6 +69,18 @@ public final class Platform implements Comparable<Platform>, Serializable {
     }
 
     /**
+     * Gets the {@link Platform} of the current JVM process.
+     *
+     * <p>Getting the current {@link Platform} <strong>always</strong> succeeds
+     * because {@code null} is used for the {@link #os} and {@link #arch} if
+     * they cannot be determined.
+     */
+    @Contract(pure = true)
+    public static @NotNull Platform current() {
+        return new Platform(Os.currentOrNull(), Arch.currentOrNull());
+    }
+
+    /**
      * Parses the given value and constructs a new {@link Platform} instance.
      *
      * <p>Parsing of a {@link Platform} <strong>always</strong> succeeds because
@@ -141,78 +104,62 @@ public final class Platform implements Comparable<Platform>, Serializable {
         final Arch[] archValues = Arch.values();
         final Platform[] values = new Platform[osValues.length * archValues.length];
         int i = -1;
-        for (final Os os : osValues) {
-            for (final Arch arch : archValues) {
-                values[++i] = new Platform(os, arch);
-            }
-        }
+        for (final Os os : osValues) for (final Arch arch : archValues) values[++i] = new Platform(os, arch);
         return values;
     }
 
     /**
-     * Transforms {@code UPPER_SNAKE_CASE} to {@code lower-dash-case}.
+     * Get the operating system of this platform, if known.
      */
     @Contract(pure = true)
-    private static @NotNull String id(final @NotNull String chars) {
-        final int l = chars.length();
-        final StringBuilder sb = new StringBuilder(l);
-        int i = 0;
-        do {
-            final char c = chars.charAt(i);
-            if (c == '_') {
-                sb.append('-');
-            } else if ('A' <= c && c <= 'Z') {
-                sb.append((char) (c + 32));
-            } else {
-                sb.append(c);
-            }
-        } while (++i < l);
-        return sb.toString();
+    public @Nullable Os getOs() {
+        return os;
     }
 
     /**
-     * Normalizes the given chars by lowering all upper chars and replacing all
-     * non-alphanumeric chars with a dash ({@code -}).
-     *
-     * @param chars to normalize
-     * @return normalized string
-     * @throws NullPointerException if {@code chars} is {@code null}
-     * @see #normalize(CharSequence, boolean)
+     * Get the architecture of this platform, if known.
      */
     @Contract(pure = true)
-    static @NotNull String normalize(final @NotNull CharSequence chars) {
-        return normalize(chars, false);
+    public @Nullable Arch getArch() {
+        return arch;
     }
 
     /**
-     * Normalizes the given chars by lowering all upper chars and either
-     * stripping or replacing all non-alphanumeric chars.
+     * Gets the canonical identifier of this platform.
      *
-     * @param chars to normalize
-     * @param strip non-alphanumeric chars ({@code true}) or replace them with a
-     *     dash ({@code -}, {@code false})
-     * @return normalized string
-     * @throws NullPointerException if {@code chars} is {@code null}
+     * <p>The canonical identifier is a machine-readable and unique way to
+     * identify a platform. The {@link Env} is not part of the platform because
+     * it is only useful in certain situations, and a target platform can have
+     * support for more than one {@link Env} at the same time, but it cannot be
+     * detected if this is the case, or not. Hence, a platform is made up only
+     * of the {@link Os} and {@link Arch} of which both are fixed.
+     *
+     * <h2>Anatomy (ABNF)</h2>
+     * <pre>
+     * ID = OS "-" ARCH "-" BITNESS ["-" ENDIANESS]
+     *
+     * OS = SEGMENT
+     * ARCH = SEGMENT
+     * BITNESS = 1*DIGIT
+     * ENDIANESS = "be" / "le" ; Big Endian / Little Endian
+     *
+     * SEGMENT = LOWER *(LOWER / DIGIT) ; [a-z][a-z0-9]*
+     * LOWER = %x61–7A ; a-z
+     * </pre>
+     *
+     * <h2>Examples</h2>
+     * <ul>
+     *     <li>{@code unknown-unknown-unknown}
+     *     <li>{@code unknown-x86-64}
+     *     <li>{@code linux-unknown-unknown}
+     *     <li>{@code linux-x86-64}
+     *     <li>{@code linux-arm-32-be}
+     *     <li>{@code darwin-ppc-64-le}
+     * </ul>
      */
     @Contract(pure = true)
-    static @NotNull String normalize(final @NotNull CharSequence chars, final boolean strip) {
-        final int l = chars.length();
-        if (l == 0) {
-            return "";
-        }
-        final StringBuilder sb = new StringBuilder(l);
-        int i = 0;
-        do {
-            final char c = chars.charAt(i);
-            if (('a' <= c && c <= 'z') || ('0' <= c && c <= '9')) {
-                sb.append(c);
-            } else if ('A' <= c && c <= 'Z') {
-                sb.append((char) (c + 32));
-            } else if (!strip) {
-                sb.append('-');
-            }
-        } while (++i < l);
-        return sb.toString();
+    public @NotNull String getId() {
+        return id;
     }
 
     @Contract(pure = true)

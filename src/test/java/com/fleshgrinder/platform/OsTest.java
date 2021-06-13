@@ -10,14 +10,18 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.junitpioneer.jupiter.SetSystemProperty;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
+@SuppressWarnings("ResultOfMethodCallIgnored")
 final class OsTest {
     private static void assertOs(
         final @NotNull String fs,
@@ -41,7 +45,6 @@ final class OsTest {
         final @NotNull Executable exe
     ) throws Throwable {assertOs("/", os, exe);}
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {
@@ -152,7 +155,11 @@ final class OsTest {
         assertOs(os, () -> assertEquals(expected, Os.current()));
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @SetSystemProperty(key = "java.vm.name", value = "Dalvik")
+    @Test void successAndroidLinux() throws Throwable {
+        assertOs("linux", () -> assertEquals(Os.ANDROID, Os.currentOrNull()));
+    }
+
     @Test void parseFailure() {
         assertThrows(UnsupportedPlatformException.class, () -> Os.parse("xxx"));
     }

@@ -14,11 +14,13 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@SuppressWarnings("ResultOfMethodCallIgnored")
 final class EnvTest {
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     private static @NotNull String ldd(final @NotNull File tempDir, final @NotNull String name, final @NotNull String @NotNull ... lines) throws IOException {
         final File ldd = new File(tempDir, "ldd-" + name + ".bat");
         ldd.createNewFile();
@@ -26,21 +28,23 @@ final class EnvTest {
         try (final PrintWriter w = new PrintWriter(ldd, "UTF-8")) {
             if (Os.isWindows()) {
                 w.write("@ECHO OFF\r\n");
-                for (final String line : lines) {
-                    w.write("ECHO \"");
-                    w.write(line);
+                for (int i = 0; i < lines.length; i++) {
+                    if (i != 0) w.write("ECHO.\r\n");
+                    w.write("ECHO | SET /P line=\"");
+                    w.write(lines[i]);
                     w.write("\"\r\n");
                 }
             } else {
-                w.write("#!/usr/bin/env sh\n");
-                for (final String line : lines) {
-                    w.write("echo '");
-                    w.write(line);
-                    w.write("'\n");
-                }
+                w.write("#!/usr/bin/env sh\nprintf '");
+                w.write(String.join("\n", lines));
+                w.write("'");
             }
         }
         return ldd.getAbsolutePath();
+    }
+
+    @Test void currentOrNullDoesNotThrowIfOsIsUnknown() {
+        assertNull(Env.currentOrNull(null, "/non/existing/path"));
     }
 
     @Test void bionic() {
@@ -70,9 +74,9 @@ final class EnvTest {
     /** {@code docker run --rm alpine ldd --version} */
     @Test void musl(@TempDir final @NotNull File tempDir) throws IOException {
         final String ldd = ldd(tempDir, "musl",
-            "musl libc (x86_64)" +
-                "Version 1.2.2" +
-                "Dynamic Program Loader" +
+            "musl libc (x86_64)",
+                "Version 1.2.2",
+                "Dynamic Program Loader",
                 "Usage: /lib/ld-musl-x86_64.so.1 [options] [--] pathname"
         );
 
@@ -108,7 +112,6 @@ final class EnvTest {
         );
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     @ParameterizedTest
     @EmptySource
     @ValueSource(strings = {
@@ -155,14 +158,40 @@ final class EnvTest {
         assertEquals(expected, Env.parse(value));
     }
 
-    @Test void lddProcessIsKilled(@TempDir final @NotNull File tempDir) throws IOException {
-        final File ldd = new File(tempDir, "ldd-hang");
-        //noinspection ResultOfMethodCallIgnored
+    /**
+     * We test here that {@code ldd} is used by default and does not throw
+     * regardless of the current platform, we cannot assert much here because
+     * we do not know if {@code ldd} is actually available in the current
+     * system, or not.
+     */
+    @Test void ldd() {
+        assertDoesNotThrow(() -> Env.ldd(null));
+    }
+
+    @Test void lddHandlesInvocationExceptionsGracefully() {
+        Env.ldd("/\0-is-not-allowed-in-a-path");
+    }
+
+    @Test void lddHandlesInterruptionGracefully(@TempDir final @NotNull File tempDir) throws IOException {
+        final String ldd = ldd(tempDir, "interrupted");
+        try {
+            Thread.currentThread().interrupt();
+            assertEquals("", Env.ldd(ldd));
+        } finally {
+            Thread.interrupted();
+        }
+    }
+
+    @Test void lddProcessIsKilledIfItHangs(@TempDir final @NotNull File tempDir) throws IOException {
+        final File ldd = new File(tempDir, "ldd-hang.bat");
         ldd.createNewFile();
-        //noinspection ResultOfMethodCallIgnored
         ldd.setExecutable(true);
         try (final PrintWriter w = new PrintWriter(ldd, "UTF-8")) {
-            w.write("#!/usr/bin/env sh\ntail -f /dev/null\n");
+            if (Os.isWindows()) {
+                w.write("@ECHO OFF\r\n:loop\r\ngoto loop");
+            } else {
+                w.write("#!/usr/bin/env sh\ntail -f /dev/null");
+            }
         }
 
         assertEquals("", Env.ldd(ldd.getAbsolutePath()));

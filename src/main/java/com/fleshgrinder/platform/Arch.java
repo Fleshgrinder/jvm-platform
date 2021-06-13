@@ -6,7 +6,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.regex.Pattern;
 
-import static com.fleshgrinder.platform.Platform.normalize;
+import static com.fleshgrinder.platform.Utils.id;
+import static com.fleshgrinder.platform.Utils.normalize;
 
 /**
  * Architecture
@@ -204,9 +205,7 @@ public enum Arch {
     @Contract(pure = true)
     public static @NotNull Arch current() throws UnsupportedPlatformException {
         final Arch arch = currentOrNull();
-        if (arch == null) {
-            throw UnsupportedPlatformException.fromSystemProperty(Arch.class, "os.arch");
-        }
+        if (arch == null) throw UnsupportedPlatformException.fromSystemProperty(Arch.class, "os.arch");
         return arch;
     }
 
@@ -305,9 +304,7 @@ public enum Arch {
     @Contract(pure = true)
     public static @NotNull Arch parse(final @NotNull CharSequence value) throws UnsupportedPlatformException {
         final Arch arch = parseOrNull(value);
-        if (arch == null) {
-            throw UnsupportedPlatformException.fromValue(Arch.class, value);
-        }
+        if (arch == null) throw UnsupportedPlatformException.fromValue(Arch.class, value);
         return arch;
     }
 
@@ -322,92 +319,50 @@ public enum Arch {
     public static @Nullable Arch parseOrNull(final @NotNull CharSequence value) {
         if (value.length() > 0) {
             final String it = normalize(value);
-            if (it.matches(".*(x86-?64|amd64|em64t|ia32e|(?<!nvpt)x64|[89]86|win64).*")) {
-                return X86_64;
-            }
-            if (it.matches(".*((ia|x)32|(x|[1-7])86|pentium|win32).*")) {
-                return X86_32;
-            }
-            if (it.matches(".*aarch-?(64)?-?(be|eb).*")) {
-                return ARM_64_BE;
-            }
-            if (it.contains("aarch")) {
-                return ARM_64;
-            }
-            if (it.matches(".*arm-?((64|v[8-9]|v[1-9]\\d+)-?(be|eb)|(be|eb)-?(64|v[8-9]|v[1-9]\\d+)).*")) {
-                return ARM_64_BE;
-            }
-            if (it.matches(".*arm-?((32)?-?(be|eb)|(be|eb)).*")) {
-                return ARM_32_BE;
-            }
-            if (it.matches(".*arm-?(64|v[8-9]|v[1-9]\\d+).*")) {
-                return ARM_64;
-            }
-            if (it.contains("arm")) {
-                return ARM_32;
-            }
-            if (it.contains("alpha")) {
-                return ALPHA_64;
-            }
-            if (it.matches(".*i(a(-?32|64(n|-?32))|tanium-?32).*")) {
-                return IA_32;
-            }
-            if (it.matches(".*i(a-?64|tanium).*")) {
-                return IA_64;
-            }
-            if (it.contains("m68k") || it.contains("m68000")) {
-                return M68K_32;
-            }
-            if (it.matches(".*(s390-?(x|64)|ibm-?z-?64).*")) {
-                return IBMZ_64;
-            }
-            if (it.matches(".*(s390|ibm-?z).*")) {
-                return IBMZ_32;
-            }
-            if (it.matches(".*(power-?(pc|rs)?|ppc)-?(64-?(le|el)|(le|el)-?64).*")) {
-                return PPC_64_LE;
-            }
-            if (it.matches(".*(power-?(pc|rs)?|ppc)-?((32)?-?(le|el)|(le|el)).*")) {
-                return PPC_32_LE;
-            }
-            if (it.matches(".*(power-?(pc|rs)?|ppc)-?64.*")) {
-                return PPC_64;
-            }
-            if (it.matches(".*(power-?(pc|rs)?|ppc).*")) {
-                return PPC_32;
-            }
-            if (it.matches(".*mips(isa)?-?(64-?(r\\d-?)?(le|el)|(le|el)-?64).*")) {
-                return MIPS_64_LE;
-            }
-            if (it.matches(".*mips(isa)?-?((32)?-?(r\\d-?)?(le|el)|(le|el)).*")) {
-                return MIPS_32_LE;
-            }
-            if (it.matches(".*mips(isa)?-?64.*")) {
-                return MIPS_64;
-            }
-            if (it.contains("mips")) {
-                return MIPS_32;
-            }
-            if (it.matches(".*risc-?v-?64.*")) {
-                return RISCV_64;
-            }
-            if (it.matches(".*risc-?v.*")) {
-                return RISCV_32;
-            }
-            if (it.matches(".*(ultra-?sparc|sparc-?(64|v9)).*")) {
-                return SPARC_64;
-            }
-            if (it.contains("sparc")) {
-                return SPARC_32;
-            }
-            if (it.matches(".*s(uper)?h-?(32-?)?be.*")) {
-                return SUPERH_32_BE;
-            }
-            if (it.contains("superh") || Pattern.matches("(?i)(^|.*[^\\w.])sh([^\\w].*|$)", value)) {
-                return SUPERH_32;
-            }
+            if (it.matches(".*(x86-?64|amd64|em64t|ia32e|(?<!nvpt)x64|[89]86).*")) return X86_64;
+            if (it.matches(".*((ia|x)32|(x|[1-7])86|pentium).*")) return X86_32;
+            if (it.matches(".*aarch-?(64)?-?(be|eb).*")) return ARM_64_BE;
+            if (it.contains("aarch")) return ARM_64;
+            if (it.matches(".*arm-?((64|v[8-9]|v[1-9]\\d+)-?(be|eb)|(be|eb)-?(64|v[8-9]|v[1-9]\\d+)).*")) return ARM_64_BE;
+            if (it.matches(".*arm-?((32)?-?(be|eb)|(be|eb)).*")) return ARM_32_BE;
+            if (it.matches(".*arm-?(64|v[8-9]|v[1-9]\\d+).*")) return ARM_64;
+            if (it.contains("arm")) return ARM_32;
+            if (it.contains("alpha")) return ALPHA_64;
+            if (it.matches(".*i(a(-?32|64(n|-?32))|tanium-?32).*")) return IA_32;
+            if (it.matches(".*i(a-?64|tanium).*")) return IA_64;
+            if (it.contains("m68k") || it.contains("m68000")) return M68K_32;
+            if (it.matches(".*(s390-?(x|64)|ibm-?z-?64).*")) return IBMZ_64;
+            if (it.matches(".*(s390|ibm-?z).*")) return IBMZ_32;
+            if (it.matches(".*(power-?(pc|rs)?|ppc)-?(64-?(le|el)|(le|el)-?64).*")) return PPC_64_LE;
+            if (it.matches(".*(power-?(pc|rs)?|ppc)-?((32)?-?(le|el)|(le|el)).*")) return PPC_32_LE;
+            if (it.matches(".*(power-?(pc|rs)?|ppc)-?64.*")) return PPC_64;
+            if (it.matches(".*(power-?(pc|rs)?|ppc).*")) return PPC_32;
+            if (it.matches(".*mips(isa)?-?(64-?(r\\d-?)?(le|el)|(le|el)-?64).*")) return MIPS_64_LE;
+            if (it.matches(".*mips(isa)?-?((32)?-?(r\\d-?)?(le|el)|(le|el)).*")) return MIPS_32_LE;
+            if (it.matches(".*mips(isa)?-?64.*")) return MIPS_64;
+            if (it.contains("mips")) return MIPS_32;
+            if (it.matches(".*risc-?v-?64.*")) return RISCV_64;
+            if (it.matches(".*risc-?v.*")) return RISCV_32;
+            if (it.matches(".*(ultra-?sparc|sparc-?(64|v9)).*")) return SPARC_64;
+            if (it.contains("sparc")) return SPARC_32;
+            if (it.matches(".*s(uper)?h-?(32-?)?be.*")) return SUPERH_32_BE;
+            if (it.contains("superh") || Pattern.matches("(?i)(^|.*[^\\w.])sh([^\\w].*|$)", value)) return SUPERH_32;
+            // These are not real arch identifiers but used by some vendors to
+            // indicate the OS and arch at once, this MUST come last because
+            // Windows has support for other archs, and we can only make this
+            // assumption if absolutely nothing else matched.
+            if (it.contains("win32")) return X86_32;
+            if (it.contains("win64")) return X86_64;
         }
         return null;
+    }
+
+    /**
+     * @return {@link #name()} in {@code lower-dash-case}
+     */
+    @Contract(pure = true)
+    public @NotNull String getId() {
+        return id(name());
     }
 
     /**
