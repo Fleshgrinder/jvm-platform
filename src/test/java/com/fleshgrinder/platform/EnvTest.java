@@ -44,13 +44,11 @@ final class EnvTest {
         return ldd.getAbsolutePath();
     }
 
-    @ClearSystemProperty(key = FS_SEP)
     @Test void bionic() {
         assertEquals(Env.BIONIC, Env.current(Os.ANDROID, "/non/existing/path"));
     }
 
     @ParameterizedTest
-    @ClearSystemProperty(key = FS_SEP)
     @EnumSource(value = Os.class, names = {"DARWIN", "DRAGONFLYBSD", "FREEBSD", "NETBSD", "OPENBSD"})
     void bsdlibc(final @NotNull Os os) {
         assertEquals(Env.BSDLIBC, Env.current(os, "/non/existing/path"));
@@ -62,7 +60,6 @@ final class EnvTest {
     }
 
     /** {@code docker run --rm alpine ldd --version} */
-    @ClearSystemProperty(key = FS_SEP)
     @Test void musl(@TempDir final @NotNull File tempDir) throws IOException {
         final String ldd = ldd(
             tempDir,
@@ -77,7 +74,6 @@ final class EnvTest {
     }
 
     /** {@code docker run --rm alpine:3.10.0 ldd --version} */
-    @ClearSystemProperty(key = FS_SEP)
     @Test void muslBug(@TempDir final @NotNull File tempDir) throws IOException {
         final String ldd = ldd(
             tempDir,
@@ -89,7 +85,6 @@ final class EnvTest {
     }
 
     /** {@code docker run --rm ubuntu ldd --version} */
-    @ClearSystemProperty(key = FS_SEP)
     @Test void glibc(@TempDir final @NotNull File tempDir) throws IOException {
         final String ldd = ldd(
             tempDir,
