@@ -68,7 +68,11 @@ java {
     withSourcesJar()
 }
 
-signing.sign(publishing.publications)
+signing {
+    isRequired = !version.toString().endsWith("-SNAPSHOT")
+    sign(publishing.publications)
+}
+
 nexusPublishing.repositories.sonatype().stagingProfileId.set(providers.gradleProperty("sonatype.stagingProfileId"))
 publishing.publications.register<MavenPublication>("sonatype") {
     from(components["java"])

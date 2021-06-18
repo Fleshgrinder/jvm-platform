@@ -44,7 +44,7 @@ public final class Platform implements Comparable<Platform>, Serializable {
      * detected if this is the case, or not. Hence, a platform is made up only
      * of the {@link Os} and {@link Arch} of which both are fixed.
      *
-     * <h2>Anatomy (ABNF)</h2>
+     * <h4>Anatomy (ABNF)</h4>
      * <pre>
      * ID = OS "-" ARCH "-" BITNESS ["-" ENDIANESS]
      *
@@ -57,7 +57,7 @@ public final class Platform implements Comparable<Platform>, Serializable {
      * LOWER = %x61–7A ; a-z
      * </pre>
      *
-     * <h2>Examples</h2>
+     * <h4>Examples</h4>
      * <ul>
      *     <li>{@code unknown-unknown-unknown}
      *     <li>{@code unknown-x86-64}
