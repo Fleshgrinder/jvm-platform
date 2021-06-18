@@ -1,65 +1,35 @@
 package com.fleshgrinder.platform;
 
+import java.io.File;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestFactory;
-import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junitpioneer.jupiter.ClearSystemProperty;
 import org.junitpioneer.jupiter.SetSystemProperty;
 
-import java.io.File;
-import java.util.Arrays;
-import java.util.stream.Stream;
-
+import static com.fleshgrinder.platform.SystemProperties.FS_SEP;
+import static com.fleshgrinder.platform.SystemProperties.OS_NAME;
+import static com.fleshgrinder.platform.SystemProperties.VM_NAME;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.DynamicTest.dynamicTest;
+import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 
-@SuppressWarnings("ResultOfMethodCallIgnored")
 final class OsTest {
-    private static void assertOs(
-        final @NotNull String fs,
-        final @Nullable String os,
-        final @NotNull Executable exe
-    ) throws Throwable {
-        final @NotNull String fsOrig = System.getProperty("file.separator");
-        final @NotNull String osOrig = System.getProperty("os.name");
-        System.setProperty("file.separator", fs);
-        System.setProperty("os.name", os == null ? "unknown" : os);
-        try {
-            exe.execute();
-        } finally {
-            System.setProperty("file.separator", fsOrig);
-            System.setProperty("os.name", osOrig);
-        }
-    }
-
-    private static void assertOs(
-        final @Nullable String os,
-        final @NotNull Executable exe
-    ) throws Throwable {assertOs("/", os, exe);}
-
     @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = {
-        "    ",
-        "\t\n\t\n",
-        "rv32imac",
-        "rv64imac",
-        "os4000",
-    })
-    void failure(final @NotNull String os) throws Throwable {
-        assertOs(os, () -> assertThrows(UnsupportedPlatformException.class, Os::current));
-    }
-
-    @ParameterizedTest
+    @ClearSystemProperty(key = OS_NAME)
+    @ClearSystemProperty(key = FS_SEP)
+    @ClearSystemProperty(key = VM_NAME)
     @CsvSource({
+        "UNKNOWN, ''",
+        "UNKNOWN, '    '",
+        "UNKNOWN, '\t\n\t\n'",
+        "UNKNOWN, rv32imac",
+        "UNKNOWN, rv64imac",
+        "UNKNOWN, os4000",
         "AIX, AIX",
         "ANDROID, Android",
         "DARWIN, Darwin",
@@ -151,68 +121,124 @@ final class OsTest {
         "ZOS, z/OS",
         "ZOS, ZOS",
     })
-    void success(final @NotNull Os expected, final @NotNull String os) throws Throwable {
-        assertOs(os, () -> assertEquals(expected, Os.current()));
+    void current(final @NotNull Os expected, final @NotNull String osName) {
+        SystemProperties.set(OS_NAME, osName);
+        assertEquals(expected, Os.current());
     }
 
-    @SetSystemProperty(key = "java.vm.name", value = "Dalvik")
-    @Test void successAndroidLinux() throws Throwable {
-        assertOs("linux", () -> assertEquals(Os.ANDROID, Os.currentOrNull()));
+    @SetSystemProperty(key = OS_NAME, value = "linux")
+    @SetSystemProperty(key = VM_NAME, value = "Dalvik")
+    @ClearSystemProperty(key = FS_SEP)
+    @Test void currentAndroid() {
+        assertEquals(Os.ANDROID, Os.current());
     }
 
-    @Test void parseFailure() {
-        assertThrows(UnsupportedPlatformException.class, () -> Os.parse("xxx"));
+    @SetSystemProperty(key = FS_SEP, value = "\\")
+    @ClearSystemProperty(key = VM_NAME)
+    @ClearSystemProperty(key = OS_NAME)
+    @Test void currentWindows() {
+        assertEquals(Os.WINDOWS, Os.current());
     }
 
-    @Test void parseSuccess() {
-        assertEquals(Os.LINUX, Os.parse("linux"));
+    private static void assertExtension(
+        final @NotNull String ext,
+        final @NotNull Supplier<String> getExt,
+        final @NotNull Function<String, String> withExtString,
+        final @NotNull Function<File, File> withExtFile
+    ) {
+        assertAll(
+            () -> assertEquals(ext, getExt.get()),
+            () -> assertEquals("some/path" + ext, withExtString.apply("some/path")),
+            () -> assertEquals(new File("some/path" + ext), withExtFile.apply(new File("some/path")))
+        );
     }
 
-    @Test void currentOsIsWindowsIfFileSeparatorSystemPropertyIsSetToBackslash() throws Throwable {
-        assertOs("\\", "unknown", () -> assertEquals(Os.WINDOWS, Os.current()));
+    @Test void executableExtensionWindows() {
+        assertExtension(
+            ".exe",
+            Os.WINDOWS::getExecutableExtension,
+            Os.WINDOWS::withExecutableExtension,
+            Os.WINDOWS::withExecutableExtension
+        );
     }
 
-    @TestFactory Stream<DynamicTest> executableExtension() {
-        return Arrays.stream(Os.values()).map(os -> dynamicTest(os.name(), () -> {
-            final String it = os == Os.WINDOWS ? ".exe" : "";
-            assertAll(
-                () -> assertEquals(it, os.getExecutableExtension()),
-                () -> assertEquals("some/path" + it, os.withExecutableExtension("some/path")),
-                () -> assertEquals(new File("some/path" + it), os.withExecutableExtension(new File("some/path")))
-            );
-        }));
+    @ParameterizedTest
+    @EnumSource(value = Os.class, names = {"WINDOWS"}, mode = EXCLUDE)
+    void executableExtension(final @NotNull Os os) {
+        assertExtension(
+            "",
+            os::getExecutableExtension,
+            os::withExecutableExtension,
+            os::withExecutableExtension
+        );
     }
 
-    @TestFactory Stream<DynamicTest> linkLibraryExtension() {
-        return Arrays.stream(Os.values()).map(os -> dynamicTest(os.name(), () -> {
-            final String it = os == Os.WINDOWS ? ".lib" : ".so";
-            assertAll(
-                () -> assertEquals(it, os.getLinkLibraryExtension()),
-                () -> assertEquals("some/path" + it, os.withLinkLibraryExtension("some/path")),
-                () -> assertEquals(new File("some/path" + it), os.withLinkLibraryExtension(new File("some/path")))
-            );
-        }));
+    @Test void linkLibraryExtensionWindows() {
+        assertExtension(
+            ".lib",
+            Os.WINDOWS::getLinkLibraryExtension,
+            Os.WINDOWS::withLinkLibraryExtension,
+            Os.WINDOWS::withLinkLibraryExtension
+        );
     }
 
-    @TestFactory Stream<DynamicTest> sharedLibraryExtension() {
-        return Arrays.stream(Os.values()).map(os -> dynamicTest(os.name(), () -> {
-            final String it = os == Os.WINDOWS ? ".dll" : os == Os.DARWIN ? ".dylib" : ".so";
-            assertAll(
-                () -> assertEquals(it, os.getSharedLibraryExtension()),
-                () -> assertEquals("some/path" + it, os.withSharedLibraryExtension("some/path")),
-                () -> assertEquals(new File("some/path" + it), os.withSharedLibraryExtension(new File("some/path")))
-            );
-        }));
+    @ParameterizedTest
+    @EnumSource(value = Os.class, names = {"WINDOWS"}, mode = EXCLUDE)
+    void linkLibraryExtension(final @NotNull Os os) {
+        assertExtension(
+            ".so",
+            os::getLinkLibraryExtension,
+            os::withLinkLibraryExtension,
+            os::withLinkLibraryExtension
+        );
     }
 
-    @TestFactory Stream<DynamicTest> staticLibraryExtension() {
-        return Arrays.stream(Os.values()).map(os -> dynamicTest(os.name(), () -> {
-            final String it = os == Os.WINDOWS ? ".lib" : ".a";
-            assertAll(
-                () -> assertEquals(it, os.getStaticLibraryExtension()),
-                () -> assertEquals("some/path" + it, os.withStaticLibraryExtension("some/path")),
-                () -> assertEquals(new File("some/path" + it), os.withStaticLibraryExtension(new File("some/path")))
-            );
-        }));
+    @Test void sharedLibraryExtensionWindows() {
+        assertExtension(
+            ".dll",
+            Os.WINDOWS::getSharedLibraryExtension,
+            Os.WINDOWS::withSharedLibraryExtension,
+            Os.WINDOWS::withSharedLibraryExtension
+        );
+    }
+
+    @Test void sharedLibraryExtensionDarwin() {
+        assertExtension(
+            ".dylib",
+            Os.DARWIN::getSharedLibraryExtension,
+            Os.DARWIN::withSharedLibraryExtension,
+            Os.DARWIN::withSharedLibraryExtension
+        );
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Os.class, names = {"DARWIN", "WINDOWS"}, mode = EXCLUDE)
+    void sharedLibraryExtension(final @NotNull Os os) {
+        assertExtension(
+            ".so",
+            os::getSharedLibraryExtension,
+            os::withSharedLibraryExtension,
+            os::withSharedLibraryExtension
+        );
+    }
+
+    @Test void staticLibraryExtensionWindows() {
+        assertExtension(
+            ".lib",
+            Os.WINDOWS::getStaticLibraryExtension,
+            Os.WINDOWS::withStaticLibraryExtension,
+            Os.WINDOWS::withStaticLibraryExtension
+        );
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Os.class, names = {"WINDOWS"}, mode = EXCLUDE)
+    void staticLibraryExtension(final @NotNull Os os) {
+        assertExtension(
+            ".a",
+            os::getStaticLibraryExtension,
+            os::withStaticLibraryExtension,
+            os::withStaticLibraryExtension
+        );
     }
 }

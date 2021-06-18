@@ -1,27 +1,28 @@
 package com.fleshgrinder.platform;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.EmptySource;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junitpioneer.jupiter.ClearSystemProperty;
 import org.junitpioneer.jupiter.SetSystemProperty;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-
-import static org.junit.jupiter.api.Assertions.assertAll;
+import static com.fleshgrinder.platform.SystemProperties.FS_SEP;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SuppressWarnings("ResultOfMethodCallIgnored")
 final class EnvTest {
-    private static @NotNull String ldd(final @NotNull File tempDir, final @NotNull String name, final @NotNull String @NotNull ... lines) throws IOException {
+    private static @NotNull String ldd(
+        final @NotNull File tempDir,
+        final @NotNull String name,
+        final @NotNull String @NotNull ... lines
+    ) throws IOException {
         final File ldd = new File(tempDir, "ldd-" + name + ".bat");
         ldd.createNewFile();
         ldd.setExecutable(true);
@@ -43,62 +44,56 @@ final class EnvTest {
         return ldd.getAbsolutePath();
     }
 
-    @Test void currentOrNullDoesNotThrowIfOsIsUnknown() {
-        assertNull(Env.currentOrNull(null, "/non/existing/path"));
-    }
-
+    @ClearSystemProperty(key = FS_SEP)
     @Test void bionic() {
-        assertAll(
-            () -> assertEquals(Env.BIONIC, Env.current(Os.ANDROID, "/non/existing/path")),
-            () -> assertEquals(Env.BIONIC, Env.currentOrNull(Os.ANDROID, "/non/existing/path"))
-        );
+        assertEquals(Env.BIONIC, Env.current(Os.ANDROID, "/non/existing/path"));
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"DARWIN", "DRAGONFLYBSD", "FREEBSD", "NETBSD", "OPENBSD"})
+    @ClearSystemProperty(key = FS_SEP)
+    @EnumSource(value = Os.class, names = {"DARWIN", "DRAGONFLYBSD", "FREEBSD", "NETBSD", "OPENBSD"})
     void bsdlibc(final @NotNull Os os) {
-        assertAll(
-            () -> assertEquals(Env.BSDLIBC, Env.current(os, "/non/existing/path")),
-            () -> assertEquals(Env.BSDLIBC, Env.currentOrNull(os, "/non/existing/path"))
-        );
+        assertEquals(Env.BSDLIBC, Env.current(os, "/non/existing/path"));
     }
 
-    @SetSystemProperty(key = "file.separator", value = "\\")
+    @SetSystemProperty(key = FS_SEP, value = "\\")
     @Test void msvc() {
-        assertAll(
-            () -> assertEquals(Env.MSVC, Env.current()),
-            () -> assertEquals(Env.MSVC, Env.currentOrNull())
-        );
+        assertEquals(Env.MSVC, Env.current());
     }
 
     /** {@code docker run --rm alpine ldd --version} */
+    @ClearSystemProperty(key = FS_SEP)
     @Test void musl(@TempDir final @NotNull File tempDir) throws IOException {
-        final String ldd = ldd(tempDir, "musl",
+        final String ldd = ldd(
+            tempDir,
+            "musl",
             "musl libc (x86_64)",
-                "Version 1.2.2",
-                "Dynamic Program Loader",
-                "Usage: /lib/ld-musl-x86_64.so.1 [options] [--] pathname"
+            "Version 1.2.2",
+            "Dynamic Program Loader",
+            "Usage: /lib/ld-musl-x86_64.so.1 [options] [--] pathname"
         );
 
-        assertAll(
-            () -> assertEquals(Env.MUSL, Env.current(Os.LINUX, ldd)),
-            () -> assertEquals(Env.MUSL, Env.currentOrNull(Os.LINUX, ldd))
-        );
+        assertEquals(Env.MUSL, Env.current(Os.LINUX, ldd));
     }
 
     /** {@code docker run --rm alpine:3.10.0 ldd --version} */
+    @ClearSystemProperty(key = FS_SEP)
     @Test void muslBug(@TempDir final @NotNull File tempDir) throws IOException {
-        final String ldd = ldd(tempDir, "musl-bug", "/lib/ld-musl-x86_64.so.1: cannot load --version: No such file or directory");
-
-        assertAll(
-            () -> assertEquals(Env.MUSL, Env.current(Os.LINUX, ldd)),
-            () -> assertEquals(Env.MUSL, Env.currentOrNull(Os.LINUX, ldd))
+        final String ldd = ldd(
+            tempDir,
+            "musl-bug",
+            "/lib/ld-musl-x86_64.so.1: cannot load --version: No such file or directory"
         );
+
+        assertEquals(Env.MUSL, Env.current(Os.LINUX, ldd));
     }
 
     /** {@code docker run --rm ubuntu ldd --version} */
+    @ClearSystemProperty(key = FS_SEP)
     @Test void glibc(@TempDir final @NotNull File tempDir) throws IOException {
-        final String ldd = ldd(tempDir, "glibc",
+        final String ldd = ldd(
+            tempDir,
+            "glibc",
             "ldd (Ubuntu GLIBC 2.31-0ubuntu9.2) 2.31",
             "Copyright (C) 2020 Free Software Foundation, Inc.",
             "This is free software; see the source for copying conditions.  There is NO",
@@ -106,26 +101,16 @@ final class EnvTest {
             "Written by Roland McGrath and Ulrich Drepper."
         );
 
-        assertAll(
-            () -> assertEquals(Env.GLIBC, Env.current(Os.LINUX, ldd)),
-            () -> assertEquals(Env.GLIBC, Env.currentOrNull(Os.LINUX, ldd))
-        );
-    }
-
-    @ParameterizedTest
-    @EmptySource
-    @ValueSource(strings = {
-        "    ",
-        "\t\n\t\n",
-        // os?x is too dangerous and produces too many false positives
-        "garbage os x garbage",
-    })
-    void parseFailure(final @NotNull String value) {
-        assertThrows(UnsupportedPlatformException.class, () -> Env.parse(value));
+        assertEquals(Env.GLIBC, Env.current(Os.LINUX, ldd));
     }
 
     @ParameterizedTest
     @CsvSource({
+        "UNKNOWN, ''",
+        "UNKNOWN, '    '",
+        "UNKNOWN, '\t\n\t\n'",
+        // os?x is too dangerous and produces too many false positives
+        "UNKNOWN, garbage os x garbage",
         "BSDLIBC, BSDLIBC",
         "BSDLIBC, garbage apple garbage",
         "BSDLIBC, garbage bsd garbage",
@@ -154,7 +139,7 @@ final class EnvTest {
         "UCLIBC, garbage uclibc garbage",
         "UCLIBC, UCLIBC",
     })
-    void parseSuccess(final @NotNull Env expected, final @NotNull String value) {
+    void parse(final @NotNull Env expected, final @NotNull String value) {
         assertEquals(expected, Env.parse(value));
     }
 

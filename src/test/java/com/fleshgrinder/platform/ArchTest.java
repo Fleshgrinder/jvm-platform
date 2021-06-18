@@ -2,48 +2,63 @@ package com.fleshgrinder.platform;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junitpioneer.jupiter.ClearSystemProperty;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static com.fleshgrinder.platform.SystemProperties.IBM_BITNESS;
+import static com.fleshgrinder.platform.SystemProperties.OS_ARCH;
+import static com.fleshgrinder.platform.SystemProperties.SUN_BITNESS;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class ArchTest {
-    private static void assertArch(
-        final @Nullable String arch,
-        final @NotNull Executable exe
-    ) throws Throwable {
-        final @NotNull String original = System.getProperty("os.arch");
-        System.setProperty("os.arch", arch == null ? "unknown" : arch);
-        try {
-            exe.execute();
-        } finally {
-            System.setProperty("os.arch", original);
-        }
-    }
-
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = {
-        "    ",
-        "\t\n\t\n",
-        "nvptx64",
-        "script.sh",
-        "bash",
-        "ksh",
-        "shell",
-        "zsh",
-    })
-    void failure(final @NotNull String arch) throws Throwable {
-        assertArch(arch, () -> assertThrows(UnsupportedPlatformException.class, Arch::current));
-    }
-
-    @ParameterizedTest
+    @ClearSystemProperty(key = OS_ARCH)
+    @ClearSystemProperty(key = SUN_BITNESS)
+    @ClearSystemProperty(key = IBM_BITNESS)
     @CsvSource({
+        "UNKNOWN_32, 32, 32,   ",
+        "UNKNOWN_32, 32,   , 32",
+        "UNKNOWN_64, 64, 64,   ",
+        "UNKNOWN_64, 64,   , 64",
+    })
+    void bitness(
+        final @NotNull Arch expectedArch,
+        final int expectedBitness,
+        final @Nullable String sunBitness,
+        final @Nullable String ibmBitness
+    ) {
+        SystemProperties.set(SUN_BITNESS, sunBitness);
+        SystemProperties.set(IBM_BITNESS, ibmBitness);
+
+        final Arch actual = Arch.current();
+        assertAll(
+            () -> assertEquals(expectedArch, actual, "Arch.current()"),
+            () -> assertEquals(expectedBitness, actual.getBitness(), "Arch.getBitness()"),
+            () -> assertEquals(expectedBitness == 32, actual.is32bit(), "Arch.is32bit()"),
+            () -> assertEquals(expectedBitness == 64, actual.is64bit(), "Arch.is64bit()")
+        );
+    }
+
+    @ParameterizedTest
+    @ClearSystemProperty(key = OS_ARCH)
+    @ClearSystemProperty(key = SUN_BITNESS)
+    @ClearSystemProperty(key = IBM_BITNESS)
+    @CsvSource({
+        // region unknown
+        "UNKNOWN_UNKNOWN, ''",
+        "UNKNOWN_UNKNOWN, '\t\n\t\n'",
+        "UNKNOWN_UNKNOWN, script.sh",
+        "UNKNOWN_UNKNOWN, bash",
+        "UNKNOWN_UNKNOWN, ksh",
+        "UNKNOWN_UNKNOWN, shell",
+        "UNKNOWN_UNKNOWN, zsh",
+        "UNKNOWN_64     , nvptx64",
+        // endregion unknown
         // region jvm
         "ALPHA_64,      alpha",
         "ARM_32,        arm",
@@ -494,27 +509,188 @@ final class ArchTest {
         // endregion SUPERH_32
         // endregion parse
     })
-    void success(final @NotNull Arch expected, final @NotNull String arch) throws Throwable {
-        assertArch(arch, () -> assertEquals(expected, Arch.current()));
+    void current(final @NotNull Arch expected, final @NotNull String arch) {
+        SystemProperties.set(OS_ARCH, arch);
+        assertEquals(expected, Arch.current());
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    @Test void parseFailure() {
-        assertThrows(UnsupportedPlatformException.class, () -> Arch.parse("xxx"));
-    }
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"UNKNOWN_UNKNOWN", "UNKNOWN_32", "UNKNOWN_64"},
+        mode = EnumSource.Mode.EXCLUDE
+    ) void isUnknownFalse(final Arch arch) { assertFalse(arch.isUnknown()); }
 
-    @Test void parseSuccess() {
-        assertEquals(Arch.X86_64, Arch.parse("amd64"));
-    }
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"UNKNOWN_UNKNOWN", "UNKNOWN_32", "UNKNOWN_64"},
+        mode = EnumSource.Mode.INCLUDE
+    ) void isUnknownTrue(final Arch arch) { assertTrue(arch.isUnknown()); }
 
-    @Test void bitness() {
-        assertAll(
-            () -> assertEquals(32, Arch.X86_32.getBitness()),
-            () -> assertTrue(Arch.X86_32.is32bit()),
-            () -> assertFalse(Arch.X86_32.is64bit()),
-            () -> assertEquals(64, Arch.X86_64.getBitness()),
-            () -> assertFalse(Arch.X86_64.is32bit()),
-            () -> assertTrue(Arch.X86_64.is64bit())
-        );
-    }
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"ARM_32", "ARM_64", "ARM_32_BE", "ARM_64_BE"},
+        mode = EnumSource.Mode.EXCLUDE
+    ) void isArmFalse(final Arch arch) { assertFalse(arch.isArm()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"ARM_32", "ARM_64", "ARM_32_BE", "ARM_64_BE"},
+        mode = EnumSource.Mode.INCLUDE
+    ) void isArmTrue(final Arch arch) { assertTrue(arch.isArm()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"ARM_32_BE", "ARM_64_BE"},
+        mode = EnumSource.Mode.EXCLUDE
+    ) void isArmBeFalse(final Arch arch) { assertFalse(arch.isArmBe()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"ARM_32_BE", "ARM_64_BE"},
+        mode = EnumSource.Mode.INCLUDE
+    ) void isArmBeTrue(final Arch arch) { assertTrue(arch.isArmBe()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"ARM_32", "ARM_64"},
+        mode = EnumSource.Mode.EXCLUDE
+    ) void isArmLeFalse(final Arch arch) { assertFalse(arch.isArmLe()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"ARM_32", "ARM_64"},
+        mode = EnumSource.Mode.INCLUDE
+    ) void isArmLeTrue(final Arch arch) { assertTrue(arch.isArmLe()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"IA_32", "IA_64"},
+        mode = EnumSource.Mode.EXCLUDE
+    ) void isIaFalse(final Arch arch) { assertFalse(arch.isIa()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"IA_32", "IA_64"},
+        mode = EnumSource.Mode.INCLUDE
+    ) void isIaTrue(final Arch arch) { assertTrue(arch.isIa()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"IBMZ_32", "IBMZ_64"},
+        mode = EnumSource.Mode.EXCLUDE
+    ) void isIbmzFalse(final Arch arch) { assertFalse(arch.isIbmz()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"IBMZ_32", "IBMZ_64"},
+        mode = EnumSource.Mode.INCLUDE
+    ) void isIbmzTrue(final Arch arch) { assertTrue(arch.isIbmz()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"MIPS_32", "MIPS_64", "MIPS_32_LE", "MIPS_64_LE"},
+        mode = EnumSource.Mode.EXCLUDE
+    ) void isMipsFalse(final Arch arch) { assertFalse(arch.isMips()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"MIPS_32", "MIPS_64", "MIPS_32_LE", "MIPS_64_LE"},
+        mode = EnumSource.Mode.INCLUDE
+    ) void isMipsTrue(final Arch arch) { assertTrue(arch.isMips()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"MIPS_32", "MIPS_64"},
+        mode = EnumSource.Mode.EXCLUDE
+    ) void isMipsBeFalse(final Arch arch) { assertFalse(arch.isMipsBe()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"MIPS_32", "MIPS_64"},
+        mode = EnumSource.Mode.INCLUDE
+    ) void isMipsBeTrue(final Arch arch) { assertTrue(arch.isMipsBe()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"MIPS_32_LE", "MIPS_64_LE"},
+        mode = EnumSource.Mode.EXCLUDE
+    ) void isMipsLeFalse(final Arch arch) { assertFalse(arch.isMipsLe()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"MIPS_32_LE", "MIPS_64_LE"},
+        mode = EnumSource.Mode.INCLUDE
+    ) void isMipsLeTrue(final Arch arch) { assertTrue(arch.isMipsLe()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"PPC_32", "PPC_64", "PPC_32_LE", "PPC_64_LE"},
+        mode = EnumSource.Mode.EXCLUDE
+    ) void isPpcFalse(final Arch arch) { assertFalse(arch.isPpc()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"PPC_32", "PPC_64", "PPC_32_LE", "PPC_64_LE"},
+        mode = EnumSource.Mode.INCLUDE
+    ) void isPpcTrue(final Arch arch) { assertTrue(arch.isPpc()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"PPC_32", "PPC_64"},
+        mode = EnumSource.Mode.EXCLUDE
+    ) void isPpcBeFalse(final Arch arch) { assertFalse(arch.isPpcBe()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"PPC_32", "PPC_64"},
+        mode = EnumSource.Mode.INCLUDE
+    ) void isPpcBeTrue(final Arch arch) { assertTrue(arch.isPpcBe()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"PPC_32_LE", "PPC_64_LE"},
+        mode = EnumSource.Mode.EXCLUDE
+    ) void isPpcLeFalse(final Arch arch) { assertFalse(arch.isPpcLe()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"PPC_32_LE", "PPC_64_LE"},
+        mode = EnumSource.Mode.INCLUDE
+    ) void isPpcLeTrue(final Arch arch) { assertTrue(arch.isPpcLe()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"RISCV_32", "RISCV_64"},
+        mode = EnumSource.Mode.EXCLUDE
+    ) void isRiscvFalse(final Arch arch) { assertFalse(arch.isRiscv()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"RISCV_32", "RISCV_64"},
+        mode = EnumSource.Mode.INCLUDE
+    ) void isRiscvTrue(final Arch arch) { assertTrue(arch.isRiscv()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"SPARC_32", "SPARC_64"},
+        mode = EnumSource.Mode.EXCLUDE
+    ) void isSparcFalse(final Arch arch) { assertFalse(arch.isSparc()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"SPARC_32", "SPARC_64"},
+        mode = EnumSource.Mode.INCLUDE
+    ) void isSparcTrue(final Arch arch) { assertTrue(arch.isSparc()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"X86_32", "X86_64"},
+        mode = EnumSource.Mode.EXCLUDE
+    ) void isX86False(final Arch arch) { assertFalse(arch.isX86()); }
+
+    @ParameterizedTest @EnumSource(
+        value = Arch.class,
+        names = {"X86_32", "X86_64"},
+        mode = EnumSource.Mode.INCLUDE
+    ) void isX86True(final Arch arch) { assertTrue(arch.isX86()); }
 }

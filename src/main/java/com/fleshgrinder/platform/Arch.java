@@ -1,10 +1,8 @@
 package com.fleshgrinder.platform;
 
+import java.util.regex.Pattern;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.regex.Pattern;
 
 import static com.fleshgrinder.platform.Utils.id;
 import static com.fleshgrinder.platform.Utils.normalize;
@@ -16,6 +14,21 @@ import static com.fleshgrinder.platform.Utils.normalize;
  */
 @SuppressWarnings("SpellCheckingInspection")
 public enum Arch {
+    /**
+     * Unknown architecture with unknown bitness.
+     */
+    UNKNOWN_UNKNOWN,
+
+    /**
+     * Unknown architecture with 32-bit bitness.
+     */
+    UNKNOWN_32,
+
+    /**
+     * Unknown architecture with 64-bit bitness.
+     */
+    UNKNOWN_64,
+
     /**
      * DEC Alpha 64-bit
      *
@@ -199,17 +212,13 @@ public enum Arch {
     X86_64;
 
     /**
-     * @return current architecture
-     * @throws UnsupportedPlatformException if unknown
+     * {@link #name()} in {@code lower-dash-case}
      */
-    @Contract(pure = true)
-    public static @NotNull Arch current() throws UnsupportedPlatformException {
-        final Arch arch = currentOrNull();
-        if (arch == null) throw UnsupportedPlatformException.fromSystemProperty(Arch.class, "os.arch");
-        return arch;
-    }
+    public final @NotNull String id = id(name());
 
     /**
+     * Gets the architecture (and bitness) of the this JVM platform.
+     *
      * <p>The value to determine the architecture of the current platform is
      * retrieved from the {@code os.arch} system property. This means that the
      * returned architecture is the one reported by the JVM and not necessarily
@@ -239,10 +248,10 @@ public enum Arch {
      * <p>Note that the value of the {@code os.arch} system property can be
      * changed by a user, like any other system property.
      *
-     * @return current architecture or {@code null} if unknown
+     * @return current architecture
      */
     @Contract(pure = true)
-    public static @Nullable Arch currentOrNull() {
+    public static @NotNull Arch current() {
         final @NotNull String it = System.getProperty("os.arch", "");
         switch (normalize(it, true)) {
             case "alpha":
@@ -292,31 +301,32 @@ public enum Arch {
             case "pentium":
                 return X86_32;
         }
-        return parseOrNull(it);
-    }
 
-    /**
-     * @param value to parse
-     * @return matching architecture
-     * @throws NullPointerException if value is {@code null}
-     * @throws UnsupportedPlatformException if unknown
-     */
-    @Contract(pure = true)
-    public static @NotNull Arch parse(final @NotNull CharSequence value) throws UnsupportedPlatformException {
-        final Arch arch = parseOrNull(value);
-        if (arch == null) throw UnsupportedPlatformException.fromValue(Arch.class, value);
-        return arch;
+        final Arch result = parse(it);
+        if (result.isUnknown()) {
+            // We cannot really trust the unknown bitness result of the parse
+            // function because its check is too simplistic. The parse method
+            // cannot do anything to make it more sophisticated since it has no
+            // additional context, however, we do: the JVM.
+            final String bitness = System.getProperty(
+                "sun.arch.data.model",
+                System.getProperty("com.ibm.vm.bitmode", "")
+            );
+            if (bitness.equals("32")) return UNKNOWN_32;
+            if (bitness.equals("64")) return UNKNOWN_64;
+        }
+        return result;
     }
 
     /**
      * Parses the given value and tries to map it to an architecture.
      *
      * @param value to parse
-     * @return matching architecture or {@code null} if unknown
+     * @return matching architecture
      * @throws NullPointerException if value is {@code null}
      */
     @Contract(pure = true)
-    public static @Nullable Arch parseOrNull(final @NotNull CharSequence value) {
+    public static @NotNull Arch parse(final @NotNull CharSequence value) {
         if (value.length() > 0) {
             final String it = normalize(value);
             if (it.matches(".*(x86-?64|amd64|em64t|ia32e|(?<!nvpt)x64|[89]86).*")) return X86_64;
@@ -353,16 +363,10 @@ public enum Arch {
             // assumption if absolutely nothing else matched.
             if (it.contains("win32")) return X86_32;
             if (it.contains("win64")) return X86_64;
+            if (it.contains("32")) return UNKNOWN_32;
+            if (it.contains("64")) return UNKNOWN_64;
         }
-        return null;
-    }
-
-    /**
-     * @return {@link #name()} in {@code lower-dash-case}
-     */
-    @Contract(pure = true)
-    public @NotNull String getId() {
-        return id(name());
+        return UNKNOWN_UNKNOWN;
     }
 
     /**
@@ -387,5 +391,153 @@ public enum Arch {
     @Contract(pure = true)
     public boolean is64bit() {
         return name().contains("64");
+    }
+
+    /**
+     * @return {@code true} if this is any of the unknown archs.
+     * @see #UNKNOWN_UNKNOWN
+     * @see #UNKNOWN_32
+     * @see #UNKNOWN_64
+     */
+    public boolean isUnknown() {
+        switch (this) {
+            case UNKNOWN_UNKNOWN:
+            case UNKNOWN_32:
+            case UNKNOWN_64:
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * @return {@code true} if this is any of the ARM archs.
+     * @see #ARM_32
+     * @see #ARM_64
+     * @see #ARM_32_BE
+     * @see #ARM_64_BE
+     */
+    public boolean isArm() {
+        return isArmBe() || isArmLe();
+    }
+
+    /**
+     * @return {@code true} if this is any of the ARM big endian archs.
+     * @see #ARM_32_BE
+     * @see #ARM_64_BE
+     */
+    public boolean isArmBe() {
+        return this == ARM_32_BE || this == ARM_64_BE;
+    }
+
+    /**
+     * @return {@code true} if this is any of the ARM little endian archs.
+     * @see #ARM_32
+     * @see #ARM_64
+     */
+    public boolean isArmLe() {
+        return this == ARM_32 || this == ARM_64;
+    }
+
+    /**
+     * @return {@code true} if this is any of the Itanium archs.
+     * @see #IA_32
+     * @see #IA_64
+     */
+    public boolean isIa() {
+        return this == IA_32 || this == IA_64;
+    }
+
+    /**
+     * @return {@code true} if this is any of the IBM Z (aka. s390) archs.
+     * @see #IBMZ_32
+     * @see #IBMZ_64
+     */
+    public boolean isIbmz() {
+        return this == IBMZ_32 || this == IBMZ_64;
+    }
+
+    /**
+     * @return {@code true} if this is any of the MIPS archs.
+     * @see #MIPS_32
+     * @see #MIPS_64
+     * @see #MIPS_32_LE
+     * @see #MIPS_64_LE
+     */
+    public boolean isMips() {
+        return isMipsBe() || isMipsLe();
+    }
+
+    /**
+     * @return {@code true} if this is any of the MIPS big endian archs.
+     * @see #MIPS_32
+     * @see #MIPS_64
+     */
+    public boolean isMipsBe() {
+        return this == MIPS_32 || this == MIPS_64;
+    }
+
+    /**
+     * @return {@code true} if this is any of the MIPS little endian archs.
+     * @see #MIPS_32_LE
+     * @see #MIPS_64_LE
+     */
+    public boolean isMipsLe() {
+        return this == MIPS_32_LE || this == MIPS_64_LE;
+    }
+
+    /**
+     * @return {@code true} if this is any of the PowerPC archs.
+     * @see #PPC_32
+     * @see #PPC_64
+     * @see #PPC_32_LE
+     * @see #PPC_64_LE
+     */
+    public boolean isPpc() {
+        return isPpcBe() || isPpcLe();
+    }
+
+    /**
+     * @return {@code true} if this is any of the PowerPC big endian archs.
+     * @see #PPC_32
+     * @see #PPC_64
+     */
+    public boolean isPpcBe() {
+        return this == PPC_32 || this == PPC_64;
+    }
+
+    /**
+     * @return {@code true} if this is any of the PowerPC little endian archs.
+     * @see #PPC_32_LE
+     * @see #PPC_64_LE
+     */
+    public boolean isPpcLe() {
+        return this == PPC_32_LE || this == PPC_64_LE;
+    }
+
+    /**
+     * @return {@code true} if this is any of the RISC-V archs.
+     * @see #RISCV_32
+     * @see #RISCV_64
+     */
+    public boolean isRiscv() {
+        return this == RISCV_32 || this == RISCV_64;
+    }
+
+    /**
+     * @return {@code true} if this is any of the SPARC archs.
+     * @see #SPARC_32
+     * @see #SPARC_64
+     */
+    public boolean isSparc() {
+        return this == SPARC_32 || this == SPARC_64;
+    }
+
+    /**
+     * @return {@code true} if this is any of the x86 archs.
+     * @see #X86_32
+     * @see #X86_64
+     */
+    public boolean isX86() {
+        return this == X86_32 || this == X86_64;
     }
 }

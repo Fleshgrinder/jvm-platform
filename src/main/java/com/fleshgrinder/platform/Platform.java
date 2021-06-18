@@ -1,10 +1,9 @@
 package com.fleshgrinder.platform;
 
+import java.io.Serializable;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.Serializable;
 
 /**
  * A platform is the combination of an {@link Os} and its {@link Arch}.
@@ -24,104 +23,16 @@ import java.io.Serializable;
 public final class Platform implements Comparable<Platform>, Serializable {
     private static final long serialVersionUID = 1;
 
-    private final @Nullable Os os;
-    private final @Nullable Arch arch;
-    private final @NotNull String id;
+    /**
+     * Gets the operating system of this platform.
+     */
+    public final @NotNull Os os;
 
     /**
-     * @param os of the platform, if any
-     * @param arch of the platform, if any
+     * Gets the architecture (and bitness) of this platform.
      */
-    public Platform(final @Nullable Os os, final @Nullable Arch arch) {
-        this.os = os;
-        this.arch = arch;
-        this.id = (os == null ? "unknown" : os.getId()) + "-" + (arch == null ? "unknown-unknown" : arch.getId());
-    }
+    public final @NotNull Arch arch;
 
-    /**
-     * Constructs new platform without {@link Os} and {@link Arch}.
-     */
-    public Platform() {
-        this(null, null);
-    }
-
-    /**
-     * Constructs new platform without {@link Arch}.
-     *
-     * @param os of the platform
-     */
-    public Platform(final @Nullable Os os) {
-        this(os, null);
-    }
-
-    /**
-     * Constructs new platform without {@link Os}.
-     *
-     * @param arch of the platform
-     */
-    public Platform(final @Nullable Arch arch) {
-        this(null, arch);
-    }
-
-    /**
-     * Gets the platform of the current JVM process.
-     *
-     * <p>Getting the current platform <strong>always</strong> succeeds
-     * because {@code null} is used for the {@link #os} and {@link #arch} if
-     * they cannot be determined.
-     *
-     * @return the current platform
-     */
-    @Contract(pure = true)
-    public static @NotNull Platform current() {
-        return new Platform(Os.currentOrNull(), Arch.currentOrNull());
-    }
-
-    /**
-     * Parses the given value and constructs a new platform instance.
-     *
-     * <p>Parsing of a platform <strong>always</strong> succeeds because
-     * {@code null} is used for the {@link #os} and {@link #arch} if they cannot
-     * be parsed.
-     *
-     * @param value to parse
-     * @return new platform
-     */
-    @Contract(pure = true)
-    public static @NotNull Platform parse(final @NotNull CharSequence value) {
-        return new Platform(Os.parseOrNull(value), Arch.parseOrNull(value));
-    }
-
-    /**
-     * Gets all platforms.
-     *
-     * @return all possible platforms.
-     */
-    @Contract(pure = true)
-    public static @NotNull Platform[] values() {
-        final Os[] osValues = Os.values();
-        final Arch[] archValues = Arch.values();
-        final Platform[] values = new Platform[osValues.length * archValues.length];
-        int i = -1;
-        for (final Os os : osValues) for (final Arch arch : archValues) values[++i] = new Platform(os, arch);
-        return values;
-    }
-
-    /**
-     * @return operating system of this platform, if known
-     */
-    @Contract(pure = true)
-    public @Nullable Os getOs() {
-        return os;
-    }
-
-    /**
-     * @return architecture of this platform, if known
-     */
-    @Contract(pure = true)
-    public @Nullable Arch getArch() {
-        return arch;
-    }
 
     /**
      * Gets the canonical identifier of this platform.
@@ -155,12 +66,79 @@ public final class Platform implements Comparable<Platform>, Serializable {
      *     <li>{@code linux-arm-32-be}
      *     <li>{@code darwin-ppc-64-le}
      * </ul>
+     */
+    public final @NotNull String id;
+
+    /**
+     * @param os of the platform
+     * @param arch of the platform
+     */
+    public Platform(final @NotNull Os os, final @NotNull Arch arch) {
+        this.os = os;
+        this.arch = arch;
+        this.id = os.id + "-" + arch.id;
+    }
+
+    /**
+     * Constructs new platform with {@link Os#UNKNOWN} and
+     * {@link Arch#UNKNOWN_UNKNOWN}.
+     */
+    public Platform() {
+        this(Os.UNKNOWN, Arch.UNKNOWN_UNKNOWN);
+    }
+
+    /**
+     * Constructs new platform with {@link Arch#UNKNOWN_UNKNOWN}.
      *
-     * @return machine-readable identifier of this platform
+     * @param os of the platform
+     */
+    public Platform(final @NotNull Os os) {
+        this(os, Arch.UNKNOWN_UNKNOWN);
+    }
+
+    /**
+     * Constructs new platform with {@link Os#UNKNOWN}.
+     *
+     * @param arch of the platform
+     */
+    public Platform(final @NotNull Arch arch) {
+        this(Os.UNKNOWN, arch);
+    }
+
+    /**
+     * Gets the platform of the current JVM process.
+     *
+     * @return the current platform
      */
     @Contract(pure = true)
-    public @NotNull String getId() {
-        return id;
+    public static @NotNull Platform current() {
+        return new Platform(Os.current(), Arch.current());
+    }
+
+    /**
+     * Parses the given value and constructs a new platform instance.
+     *
+     * @param value to parse
+     * @return new platform
+     */
+    @Contract(pure = true)
+    public static @NotNull Platform parse(final @NotNull CharSequence value) {
+        return new Platform(Os.parse(value), Arch.parse(value));
+    }
+
+    /**
+     * Gets all platforms.
+     *
+     * @return all possible platforms.
+     */
+    @Contract(pure = true)
+    public static @NotNull Platform[] values() {
+        final Os[] osValues = Os.values();
+        final Arch[] archValues = Arch.values();
+        final Platform[] values = new Platform[osValues.length * archValues.length];
+        int i = -1;
+        for (final Os os : osValues) for (final Arch arch : archValues) values[++i] = new Platform(os, arch);
+        return values;
     }
 
     @Contract(pure = true)

@@ -1,10 +1,8 @@
 package com.fleshgrinder.platform;
 
+import java.io.File;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.io.File;
 
 import static com.fleshgrinder.platform.Utils.id;
 import static com.fleshgrinder.platform.Utils.normalize;
@@ -16,6 +14,8 @@ import static com.fleshgrinder.platform.Utils.normalize;
  */
 @SuppressWarnings("SpellCheckingInspection")
 public enum Os {
+    UNKNOWN,
+
     /**
      * IBM AIX
      *
@@ -158,6 +158,11 @@ public enum Os {
     ZOS;
 
     /**
+     * {@link #name()} in {@code lower-dash-case}
+     */
+    public final @NotNull String id = id(name());
+
+    /**
      * Determines if the current OS is Windows.
      *
      * @return {@code true} if the current OS is Windows.
@@ -170,31 +175,10 @@ public enum Os {
     /**
      * Gets this platform's operating system.
      *
-     * @return current operating system
-     * @throws UnsupportedPlatformException if unknown
+     * @return current OS or {@link #UNKNOWN}
      */
     @Contract(pure = true)
-    public static @NotNull Os current() throws UnsupportedPlatformException {
-        final Os os = currentOrNull();
-        if (os == null) throw UnsupportedPlatformException.fromSystemProperty(Os.class, "os.name");
-        return os;
-    }
-
-    /**
-     * Gets this platform's operating system.
-     *
-     * <p>The value to determine the operating system of the current platform is
-     * retrieved from the {@code os.name} system property. This means that the
-     * returned operating system is the one reported by the JVM and not
-     * necessarily the real operating system of the platform.
-     *
-     * <p>Note that the value of the {@code os.arch} system property can be
-     * changed by a user, like any other system property.
-     *
-     * @return current operating system or {@code null} if unknown
-     */
-    @Contract(pure = true)
-    public static @Nullable Os currentOrNull() {
+    public static @NotNull Os current() {
         if (isWindows()) return WINDOWS;
         final @NotNull String it = System.getProperty("os.name", "");
         switch (normalize(it, true)) {
@@ -241,31 +225,18 @@ public enum Os {
             case "zos":
                 return ZOS;
         }
-        return parseOrNull(it);
+        return parse(it);
     }
 
     /**
      * Parses the given value and tries to extract
      *
      * @param value to parse
-     * @return matching operating system
-     * @throws NullPointerException if value is {@code null}
-     * @throws UnsupportedPlatformException if unknown
-     */
-    @Contract(pure = true)
-    public static @NotNull Os parse(final @NotNull CharSequence value) throws UnsupportedPlatformException {
-        final Os os = parseOrNull(value);
-        if (os == null) throw UnsupportedPlatformException.fromValue(Os.class, value);
-        return os;
-    }
-
-    /**
-     * @param value to parse
-     * @return matching operating system or {@code null} if unknown
+     * @return matching OS or {@link #UNKNOWN}
      * @throws NullPointerException if value is {@code null}
      */
     @Contract(pure = true)
-    public static @Nullable Os parseOrNull(final @NotNull CharSequence value) {
+    public static @NotNull Os parse(final @NotNull CharSequence value) {
         if (value.length() > 0) {
             final @NotNull String it = normalize(value);
             // Android MUST come before Linux because they often come together
@@ -297,15 +268,7 @@ public enum Os {
             if (it.matches(".*(s(olaris|un-?os)).*")) return SOLARIS;
             if (it.matches(".*z-?os.*")) return ZOS;
         }
-        return null;
-    }
-
-    /**
-     * @return {@link #name()} in {@code lower-dash-case}
-     */
-    @Contract(pure = true)
-    public @NotNull String getId() {
-        return id(name());
+        return UNKNOWN;
     }
 
     /**
@@ -422,5 +385,9 @@ public enum Os {
     @Contract(pure = true)
     public @NotNull File withStaticLibraryExtension(final @NotNull File file) {
         return new File(file.getParentFile(), withStaticLibraryExtension(file.getName()));
+    }
+
+    @Override public String toString() {
+        return id;
     }
 }

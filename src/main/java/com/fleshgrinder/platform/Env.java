@@ -1,13 +1,11 @@
 package com.fleshgrinder.platform;
 
+import java.io.InputStream;
+import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.TestOnly;
 import org.jetbrains.annotations.VisibleForTesting;
-
-import java.io.InputStream;
-import java.util.concurrent.TimeUnit;
 
 import static com.fleshgrinder.platform.Utils.id;
 import static com.fleshgrinder.platform.Utils.normalize;
@@ -22,6 +20,8 @@ import static com.fleshgrinder.platform.Utils.normalize;
  */
 @SuppressWarnings("SpellCheckingInspection")
 public enum Env {
+    UNKNOWN,
+
     /**
      * Bionic
      *
@@ -87,6 +87,11 @@ public enum Env {
     UCLIBC;
 
     /**
+     * {@link #name()} in {@code lower-dash-case}
+     */
+    public final @NotNull String id = id(name());
+
+    /**
      * Gets the platform's env.
      *
      * <p>Determining the env is expensive compared to {@link Arch#current()} or
@@ -94,66 +99,25 @@ public enum Env {
      * information regarding this platform if it is not {@link Os#WINDOWS}. On
      * {@link Os#WINDOWS} the result always is {@link #MSVC}.
      *
-     * @return current env
-     * @throws UnsupportedPlatformException if unknown
+     * @return current env or {@link #UNKNOWN}
      */
     @Contract(pure = true)
-    public static @NotNull Env current() throws UnsupportedPlatformException {
+    public static @NotNull Env current() {
         return current(Os.current(), null);
     }
 
-    @Contract(pure = true)
-    @TestOnly
-    @VisibleForTesting
-    static @NotNull Env current(final @NotNull Os os, final @Nullable String lddPath) throws UnsupportedPlatformException {
-        final Env env = toEnv(os);
-        if (env == null) return parse(ldd(lddPath));
-        return env;
-    }
-
     /**
-     * Gets the platform's env.
+     * Parses the given value and tries to match it to one of the known envs.
      *
-     * @return current env or {@code null} if unknown
-     */
-    @Contract(pure = true)
-    public static @Nullable Env currentOrNull() {
-        return currentOrNull(Os.currentOrNull(), null);
-    }
-
-    @Contract(pure = true)
-    @TestOnly
-    @VisibleForTesting
-    static @Nullable Env currentOrNull(final @Nullable Os os, final @Nullable String lddPath) {
-        if (os == null) return null;
-        final Env env = toEnv(os);
-        if (env == null) return parseOrNull(ldd(lddPath));
-        return env;
-    }
-
-    /**
      * @param value to parse
-     * @return matching env
-     * @throws NullPointerException if value is {@code null}
-     * @throws UnsupportedPlatformException if env is unknown
-     */
-    @Contract(pure = true)
-    public static @NotNull Env parse(final @NotNull CharSequence value) throws UnsupportedPlatformException {
-        final Env env = parseOrNull(value);
-        if (env == null) throw UnsupportedPlatformException.fromValue(Env.class, value);
-        return env;
-    }
-
-    /**
-     * @param value to parse
-     * @return matching env or {@code null} if unknown
+     * @return matching env or {@link #UNKNOWN}
      * @throws NullPointerException if value is {@code null}
      */
     @Contract(pure = true)
-    public static @Nullable Env parseOrNull(final @NotNull CharSequence value) {
+    public static @NotNull Env parse(final @NotNull CharSequence value) {
         if (value.length() > 0) {
             final String it = normalize(value);
-            for (final Env env : Env.values()) if (it.contains(env.getId())) return env;
+            for (final Env env : Env.values()) if (env != Env.UNKNOWN && it.contains(env.id)) return env;
             // Matching `gnu` is dangerous because of the GNU operating systems
             // that sometimes identify themselves only with GNU as well, but we
             // need `gnu` here because of gcc. Future has to show if this is a
@@ -161,18 +125,16 @@ public enum Env {
             //
             // https://en.wikipedia.org/wiki/GNU_variants
             if (it.matches(".*g(cc|nu).*")) return GLIBC;
-            if (it.matches(".*(apple|bsd|darwin|mac|osx).*")) return BSDLIBC;
+            if (it.matches(".*(apple|bsd|darwin|mac|osx|ios|dragonfly).*")) return BSDLIBC;
             if (it.matches(".*(crtdll|ucrt|vcruntime|vs|win).*")) return MSVC;
+            if (it.contains("android")) return BIONIC;
         }
-        return null;
+        return UNKNOWN;
     }
 
-    /**
-     * @param os to convert
-     * @return env for the given OS or {@code null} if OS has not fixed env
-     */
     @Contract(pure = true)
-    private static @Nullable Env toEnv(final @NotNull Os os) {
+    @VisibleForTesting
+    static @NotNull Env current(final @NotNull Os os, final @Nullable String lddPath) {
         switch (os) {
             case ANDROID:
                 return BIONIC;
@@ -185,7 +147,7 @@ public enum Env {
             case WINDOWS:
                 return MSVC;
         }
-        return null;
+        return parse(ldd(lddPath));
     }
 
     /**
@@ -221,11 +183,7 @@ public enum Env {
         return sb.toString();
     }
 
-    /**
-     * @return {@link #name()} in {@code lower-dash-case}
-     */
-    @Contract(pure = true)
-    public @NotNull String getId() {
-        return id(name());
+    @Override public String toString() {
+        return id;
     }
 }
