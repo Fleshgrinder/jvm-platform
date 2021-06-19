@@ -29,10 +29,10 @@ information is extremely lightweight and probably never the bottleneck in any
 serious program.
 
 ```java
-final Platform p = Platform.current();
-System.out.println(p.getOs());   // e.g. LINUX
-System.out.println(p.getArch()); // e.g. X86_64
-System.out.println(p);           // e.g. linux-x86-64
+final Platform platform = Platform.current();
+System.out.println(platform.os);   // e.g. LINUX
+System.out.println(platform.arch); // e.g. X86_64
+System.out.println(platform);      // e.g. linux-x86-64
 ```
 
 A feature that most libraries out there are missing is the ability to determine
@@ -56,9 +56,9 @@ want to redistribute some native executable that is published somewhere to a
 Maven repository with Gradle (see [gradle-exe-plugin]).
 
 ```java
-final Platform p = Platform.parse("OpenJDK11U-jdk_x64_linux_hotspot_11.0.11_9.tar.gz");
-assert LINUX == p.getOs();
-assert X86_64 == p.getArch();
+final Platform platform = Platform.parse("OpenJDK11U-jdk_x64_linux_hotspot_11.0.11_9.tar.gz");
+assert platform.os == LINUX;
+assert platform.arch == X86_64;
 ```
 
 ## Project Info
