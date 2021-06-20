@@ -63,7 +63,6 @@ assert platform.arch == X86_64;
 
 ## Project Info
 
-- Licensed under the [Unlicense], see [UNLICENSE.md] for details.
 - Contributions are highly appreciated, see [CONTRIBUTING.md] for details.
 - We use [semantic versioning] and [keep a changelog], available versions and
   changes are listed on our [releases] page.
@@ -81,6 +80,4 @@ assert platform.arch == X86_64;
 [musl]: https://musl.libc.org/
 [releases]: https://github.com/Fleshgrinder/jvm-platform/releases
 [semantic versioning]: http://semver.org/
-[UNLICENSE.md]: UNLICENSE.md
-[Unlicense]: https://unlicense.org/
 [Usage.java]: src/test/java/com/fleshgrinder/platform/Usage.java

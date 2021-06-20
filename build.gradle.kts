@@ -110,6 +110,7 @@ publishing.publications.register<MavenPublication>("sonatype") {
         licenses {
             license {
                 name.set(providers.gradleProperty("license.name"))
+                comments.set(providers.gradleProperty("license.comments"))
                 url.set(providers.gradleProperty("license.url"))
                 distribution.set(providers.gradleProperty("license.distribution"))
             }

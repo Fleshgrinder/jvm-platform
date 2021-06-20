@@ -33,7 +33,6 @@ public final class Platform implements Comparable<Platform>, Serializable {
      */
     public final @NotNull Arch arch;
 
-
     /**
      * Gets the canonical identifier of this platform.
      *
