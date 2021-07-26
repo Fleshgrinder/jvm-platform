@@ -3,6 +3,7 @@ package com.fleshgrinder.platform;
 import java.io.File;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static com.fleshgrinder.platform.Utils.id;
 import static com.fleshgrinder.platform.Utils.normalize;
@@ -14,8 +15,6 @@ import static com.fleshgrinder.platform.Utils.normalize;
  */
 @SuppressWarnings("SpellCheckingInspection")
 public enum Os {
-    UNKNOWN,
-
     /**
      * IBM AIX
      *
@@ -73,13 +72,6 @@ public enum Os {
     HPUX,
 
     /**
-     * Linux
-     *
-     * @see <a href="https://en.wikipedia.org/wiki/Linux">Wikipedia</a>
-     */
-    LINUX,
-
-    /**
      * IBM i
      *
      * @see <a href="https://en.wikipedia.org/wiki/IBM_i">Wikipedia</a>
@@ -92,6 +84,13 @@ public enum Os {
      * @see <a href="https://en.wikipedia.org/wiki/Illumos">Wikipedia</a>
      */
     ILLUMOS,
+
+    /**
+     * Linux
+     *
+     * @see <a href="https://en.wikipedia.org/wiki/Linux">Wikipedia</a>
+     */
+    LINUX,
 
     /**
      * NetBSD
@@ -157,35 +156,61 @@ public enum Os {
      */
     ZOS;
 
-    /**
-     * {@link #name()} in {@code lower-dash-case}
-     */
-    public final @NotNull String id = id(name());
+    /** @see #toString() */
+    private final @NotNull String id = id(name());
 
     /**
-     * Determines if the current OS is Windows.
+     * Gets the OS of the current platform.
      *
-     * @return {@code true} if the current OS is Windows.
+     * <p>The system properties {@code file.separator} and {@code os.name} are
+     * used to determine the current OS. This means that the value
+     * for them was set during the compilation of the JVM and may not represent
+     * the actual OS that this JVM is currently running on.
+     * However, if the JVM can run on this OS despite it not
+     * matching the actual OS this means that any other software
+     * should be able to do so as well.
+     *
+     * <p>Note that the values of the {@code file.separator} and {@code os.name}
+     * system properties can be changed by a user, like any other system
+     * property.
+     *
+     * @return the current OS.
+     * @throws IllegalStateException if it cannot be determined.
+     * @see #currentOrNull()
      */
     @Contract(pure = true)
-    static boolean isWindows() {
-        return "\\".equals(System.getProperty("file.separator"));
+    public static @NotNull Os current() throws IllegalStateException {
+        final Os os = currentOrNull();
+        if (os == null) throw new IllegalStateException("Unknown operating system: " + System.getProperty("os.name", "missing 'os.name' system property"));
+        return os;
     }
 
     /**
-     * Gets this platform's operating system.
+     * Gets the OS of the current platform.
      *
-     * @return current OS or {@link #UNKNOWN}
+     * <p>The system properties {@code file.separator} and {@code os.name} are
+     * used to determine the current OS. This means that the value
+     * for them was set during the compilation of the JVM and may not represent
+     * the actual OS that this JVM is currently running on.
+     * However, if the JVM can run on this OS despite it not
+     * matching the actual OS this means that any other software
+     * should be able to do so as well.
+     *
+     * <p>Note that the values of the {@code file.separator} and {@code os.name}
+     * system properties can be changed by a user, like any other system
+     * property.
+     *
+     * @return the current OS or {@code null} if it cannot be determined.
+     * @see #current()
      */
     @Contract(pure = true)
-    public static @NotNull Os current() {
-        if (isWindows()) return WINDOWS;
-        final @NotNull String it = System.getProperty("os.name", "");
+    public static @Nullable Os currentOrNull() {
+        if ("\\".equals(System.getProperty("file.separator"))) return WINDOWS;
+        final @Nullable String it = System.getProperty("os.name");
+        if (it == null) return null;
         switch (normalize(it, true)) {
             case "aix":
                 return AIX;
-            case "android":
-                return ANDROID;
             case "linux":
                 return "dalvik".equalsIgnoreCase(System.getProperty("java.vm.name", "")) ? ANDROID : LINUX;
             case "darwin":
@@ -225,92 +250,189 @@ public enum Os {
             case "zos":
                 return ZOS;
         }
-        return parse(it);
+        return parseOrNull(it);
     }
 
     /**
-     * Parses the given value and tries to extract
+     * Gets the OS whose string matches the given value.
      *
-     * @param value to parse
-     * @return matching OS or {@link #UNKNOWN}
-     * @throws NullPointerException if value is {@code null}
+     * <p>This method is strict and only accepts values that perfectly match the
+     * strings as described in {@link #toString}. Use {@link #parse} or
+     * {@link #parseOrNull} for a lenient approach that accept arbitrary input.
+     *
+     * @param value to get the OS for.
+     * @return the matching OS.
+     * @throws IllegalArgumentException if no match is found.
+     * @throws NullPointerException if the given value is {@code null}.
+     * @see #fromStringOrNull(String)
+     * @see #parse(CharSequence)
+     * @see #parseOrNull(CharSequence)
+     * @see #toString()
+     * @see #valueOf(String)
      */
     @Contract(pure = true)
-    public static @NotNull Os parse(final @NotNull CharSequence value) {
-        if (value.length() > 0) {
-            final @NotNull String it = normalize(value);
-            // Android MUST come before Linux because they often come together
-            if (it.contains("android")) return ANDROID;
-            if (it.matches(".*n[iu]x.*")) return LINUX;
-            // (32|64)imac as in RV(32|64)IMAC ISA may be embedded in a platform
-            // identifier but is not necessarily targeting Darwin.
-            // `osx` is considered Darwin even standalone but `os-x` is not,
-            // because it would also match `os-x86` which leads to too many
-            // false positives.
-            if (it.matches(".*(apple|darwin|(?<!(32|64)i)mac|osx|ios).*")) return DARWIN;
-            // MUST come after darWIN!
-            // w32 and w64 are from gcc (actually mingw-w64)
-            if (it.matches(".*w(in|32|64).*")) return WINDOWS;
-            if (it.contains("aix")) return AIX;
-            if (it.contains("dragonfly")) return DRAGONFLYBSD;
-            if (it.contains("freebsd")) return FREEBSD;
-            if (it.contains("fuchsia")) return FUCHSIA;
-            if (it.contains("haiku")) return HAIKU;
-            if (it.contains("netbsd")) return NETBSD;
-            if (it.contains("openbsd")) return OPENBSD;
-            if (it.contains("plan9")) return PLAN9;
-            if (it.contains("redox")) return REDOX;
-            if (it.contains("vxworks")) return VXWORKS;
-            if (it.matches(".*hp-?ux.*")) return HPUX;
-            if (it.matches(".*(ibm-?i|os400[^0-9]).*")) return IBMI;
-            if (it.matches(".*illum-?os.*")) return ILLUMOS;
-            if (it.matches(".*(qnx|procnto).*")) return QNX;
-            if (it.matches(".*(s(olaris|un-?os)).*")) return SOLARIS;
-            if (it.matches(".*z-?os.*")) return ZOS;
-        }
-        return UNKNOWN;
+    public static @NotNull Os fromString(final @NotNull String value) throws IllegalArgumentException {
+        final Os os = fromStringOrNull(value);
+        if (os == null) throw new IllegalArgumentException("Unknown operating system: " + value);
+        return os;
     }
 
     /**
-     * @return extension for executables with leading period or an empty string
-     *     if not applicable on this platform
+     * Gets the OS whose string matches the given value.
+     *
+     * <p>This method is strict and only accepts values that perfectly match the
+     * strings as described in {@link #toString}. Use {@link #parse} or
+     * {@link #parseOrNull} for a lenient approach that accept arbitrary input.
+     *
+     * @param value to get the OS for.
+     * @return the matching OS or {@code null} if no match is found.
+     * @throws NullPointerException if the given value is {@code null}.
+     * @see #fromString(String)
+     * @see #parse(CharSequence)
+     * @see #parseOrNull(CharSequence)
+     * @see #toString()
+     * @see #valueOf(String)
+     */
+    @Contract(pure = true)
+    public static @Nullable Os fromStringOrNull(final @NotNull String value) {
+        for (final Os os : Os.values()) if (os.id.equals(value)) return os;
+        return null;
+    }
+
+    /**
+     * Parses the given value and tries to match it with an OS.
+     *
+     * @param value to parse and match.
+     * @return the matching OS.
+     * @throws IllegalArgumentException if no matching OS is found.
+     * @throws NullPointerException if the given value is {@code null}.
+     * @see #fromString(String)
+     * @see #fromStringOrNull(String)
+     * @see #parseOrNull(CharSequence)
+     * @see #valueOf(String)
+     */
+    @Contract(pure = true)
+    public static @NotNull Os parse(final @NotNull CharSequence value) throws IllegalArgumentException {
+        final Os os = parseOrNull(value);
+        if (os == null) throw new IllegalArgumentException("Unknown operating system: " + value);
+        return os;
+    }
+
+    /**
+     * Parses the given value and tries to match it with an OS.
+     *
+     * @param value to parse and match.
+     * @return the matching OS or {@code null} if no match is found.
+     * @throws NullPointerException if the given value is {@code null}.
+     * @see #fromString(String)
+     * @see #fromStringOrNull(String)
+     * @see #parse(CharSequence)
+     * @see #valueOf(String)
+     */
+    @Contract(pure = true)
+    public static @Nullable Os parseOrNull(final @NotNull CharSequence value) {
+        if (value.length() > 0) {
+            final String it = normalize(value);
+            for (final Os os : Os.values()) if (os.id.equals(it)) return os;
+            // region common
+            // Android MUST come before Linux because they often come together
+            if (it.matches("(?s).*\\bandroid\\b.*?")) return ANDROID;
+            if (it.matches("(?s).*\\b(linux|u?nix)\\b.*?")) return LINUX;
+            if (it.matches("(?s).*\\b(apple|darwin|ios|mac(osx?)?|os-?x)\\b.*?")) return DARWIN;
+            if (it.matches("(?s).*\\b(w(7|8|1[01]|32|64|xp)|win(dows)?(\\d|\\d\\d|xp)?)\\b.*?")) return WINDOWS;
+            // endregion common
+            // region uncommon
+            if (it.matches("(?s).*\\baix\\b.*?")) return AIX;
+            if (it.matches("(?s).*\\bdragon-?fly(bsd)?\\b.*?")) return DRAGONFLYBSD;
+            if (it.matches("(?s).*\\bfree-?bsd\\b.*?")) return FREEBSD;
+            if (it.matches("(?s).*\\bfuchsia\\b.*?")) return FUCHSIA;
+            if (it.matches("(?s).*\\bhaiku\\b.*?")) return HAIKU;
+            if (it.matches("(?s).*\\bhp-?ux\\b.*?")) return HPUX;
+            if (it.matches("(?s).*\\b(ibm-?i|os-?400)\\b.*?")) return IBMI;
+            if (it.matches("(?s).*\\billum(os)?\\b.*?")) return ILLUMOS;
+            if (it.matches("(?s).*\\bnet-?bsd\\b.*?")) return NETBSD;
+            if (it.matches("(?s).*\\bopen-?bsd\\b.*?")) return OPENBSD;
+            if (it.matches("(?s).*\\bplan-?9\\b.*?")) return PLAN9;
+            if (it.matches("(?s).*\\b(qnx|procnto)\\b.*?")) return QNX;
+            if (it.matches("(?s).*\\bredox\\b.*?")) return REDOX;
+            if (it.matches("(?s).*\\b(s(olaris|un-?os))\\b.*?")) return SOLARIS;
+            if (it.matches("(?s).*\\bvx-?works\\b.*?")) return VXWORKS;
+            if (it.matches("(?s).*\\bz-?os\\b.*?")) return ZOS;
+            // endregion uncommon
+        }
+        return null;
+    }
+
+    /**
+     * Gets the OS specific executable extension.
+     *
+     * <ul>
+     *     <li>{@code .exe} for {@link #WINDOWS}
+     *     <li>empty string for all others
+     * </ul>
+     *
+     * @return the OS specific executable extension.
+     * @see #withExecutableExtension(File)
+     * @see #withExecutableExtension(String)
      */
     @Contract(pure = true)
     public @NotNull String getExecutableExtension() {
-        if (this == WINDOWS) return ".exe";
-        return "";
+        return this == WINDOWS ? ".exe" : "";
     }
 
     /**
-     * @param path to append the extension to
-     * @return path with {@link #getExecutableExtension}
+     * Appends the OS specific executable extension to the given path.
+     *
+     * @param path to append the extension to.
+     * @return path with OS specific executable extension appended.
+     * @throws NullPointerException if the given path is {@code null}.
+     * @see #getExecutableExtension()
+     * @see #withExecutableExtension(File)
      */
     @Contract(pure = true)
     public @NotNull String withExecutableExtension(final @NotNull String path) {
-        return path + getExecutableExtension();
+        return this == WINDOWS ? path + getExecutableExtension() : path;
     }
 
     /**
-     * @param file to append the extension to
-     * @return file with {@link #getExecutableExtension}
+     * Appends the OS specific executable extension to the given file.
+     *
+     * @param file to append the extension to.
+     * @return file with OS specific executable extension appended.
+     * @throws NullPointerException if the given file is {@code null}.
+     * @see #getExecutableExtension()
+     * @see #withExecutableExtension(File)
      */
     @Contract(pure = true)
     public @NotNull File withExecutableExtension(final @NotNull File file) {
-        return new File(file.getParentFile(), withExecutableExtension(file.getName()));
+        return this == WINDOWS ? new File(file.getParentFile(), withExecutableExtension(file.getName())) : file;
     }
 
     /**
-     * @return extension for link libraries with leading period on this platform
+     * Gets the OS specific link library extension.
+     *
+     * <ul>
+     *     <li>{@code .lib} for {@link #WINDOWS}
+     *     <li>{@code .so} for all others
+     * </ul>
+     *
+     * @return the OS specific link library extension.
+     * @see #withLinkLibraryExtension(File)
+     * @see #withLinkLibraryExtension(String)
      */
     @Contract(pure = true)
     public @NotNull String getLinkLibraryExtension() {
-        if (this == WINDOWS) return ".lib";
-        return ".so";
+        return this == WINDOWS ? ".lib" : ".so";
     }
 
     /**
-     * @param path to append the extension to
-     * @return path with {@link #getLinkLibraryExtension}
+     * Appends the OS specific link library extension to the given path.
+     *
+     * @param path to append the extension to.
+     * @return path with OS specific link library extension appended.
+     * @throws NullPointerException if the given path is {@code null}.
+     * @see #getLinkLibraryExtension()
+     * @see #withLinkLibraryExtension(File)
      */
     @Contract(pure = true)
     public @NotNull String withLinkLibraryExtension(final @NotNull String path) {
@@ -318,8 +440,13 @@ public enum Os {
     }
 
     /**
-     * @param file to append the extension to
-     * @return file with {@link #getLinkLibraryExtension}
+     * Appends the OS specific link library extension to the given file.
+     *
+     * @param file to append the extension to.
+     * @return file with OS specific link library extension appended.
+     * @throws NullPointerException if the given file is {@code null}.
+     * @see #getLinkLibraryExtension()
+     * @see #withLinkLibraryExtension(File)
      */
     @Contract(pure = true)
     public @NotNull File withLinkLibraryExtension(final @NotNull File file) {
@@ -327,23 +454,38 @@ public enum Os {
     }
 
     /**
-     * @return extension for shared libraries with leading period on this
-     *     platform
+     * Gets the OS specific shared library extension.
+     *
+     * <ul>
+     *     <li>{@code .dll} for {@link #WINDOWS}
+     *     <li>{@code .dylib} for {@link #DARWIN}*
+     *     <li>{@code .so} for all others
+     * </ul>
+     *
+     * <p>* The extension for shared libraries has changed from {@code .jnilib}
+     * to {@code .dylib} on {@link #DARWIN} a very long time ago. Before Java
+     * 1.7 the {@code .jnilib} extension was the default and this is why there
+     * still are various libraries out there using this extension. However, it
+     * should not be used anymore and this library has no support for it in any
+     * way.
+     *
+     * @return the OS specific shared library extension.
+     * @see #withSharedLibraryExtension(String)
+     * @see #withSharedLibraryExtension(File)
      */
     @Contract(pure = true)
     public @NotNull String getSharedLibraryExtension() {
-        switch (this) {
-            case WINDOWS:
-                return ".dll";
-            case DARWIN:
-                return ".dylib";
-        }
-        return ".so";
+        return this == WINDOWS ? ".dll" : this == DARWIN ? ".dylib" : ".so";
     }
 
     /**
-     * @param path to append the extension to
-     * @return path with {@link #getSharedLibraryExtension}
+     * Appends the OS specific shared library extension to the given path.
+     *
+     * @param path to append the extension to.
+     * @return path with OS specific shared library extension appended.
+     * @throws NullPointerException if the given path is {@code null}.
+     * @see #getSharedLibraryExtension()
+     * @see #withSharedLibraryExtension(File)
      */
     @Contract(pure = true)
     public @NotNull String withSharedLibraryExtension(final @NotNull String path) {
@@ -351,8 +493,13 @@ public enum Os {
     }
 
     /**
-     * @param file to append the extension to
-     * @return file with {@link #getSharedLibraryExtension}
+     * Appends the OS specific shared library extension to the given file.
+     *
+     * @param file to append the extension to.
+     * @return file with OS specific shared library extension appended.
+     * @throws NullPointerException if the given file is {@code null}.
+     * @see #getSharedLibraryExtension()
+     * @see #withSharedLibraryExtension(File)
      */
     @Contract(pure = true)
     public @NotNull File withSharedLibraryExtension(final @NotNull File file) {
@@ -360,18 +507,30 @@ public enum Os {
     }
 
     /**
-     * @return extension for static libraries with leading period on this
-     *     platform
+     * Gets the OS specific static library extension.
+     *
+     * <ul>
+     *     <li>{@code .lib} for {@link #WINDOWS}
+     *     <li>{@code .a} for all others
+     * </ul>
+     *
+     * @return the OS specific static library extension.
+     * @see #withStaticLibraryExtension(File)
+     * @see #withStaticLibraryExtension(String)
      */
     @Contract(pure = true)
     public @NotNull String getStaticLibraryExtension() {
-        if (this == WINDOWS) return ".lib";
-        return ".a";
+        return this == WINDOWS ? ".lib" : ".a";
     }
 
     /**
-     * @param path to append the extension to
-     * @return path with {@link #getStaticLibraryExtension}
+     * Appends the OS specific static library extension to the given path.
+     *
+     * @param path to append the extension to.
+     * @return path with OS specific static library extension appended.
+     * @throws NullPointerException if the given path is {@code null}.
+     * @see #getStaticLibraryExtension()
+     * @see #withStaticLibraryExtension(File)
      */
     @Contract(pure = true)
     public @NotNull String withStaticLibraryExtension(final @NotNull String path) {
@@ -379,15 +538,33 @@ public enum Os {
     }
 
     /**
-     * @param file to append the extension to
-     * @return file with {@link #getStaticLibraryExtension}
+     * Appends the OS specific static library extension to the given file.
+     *
+     * @param file to append the extension to.
+     * @return file with OS specific static library extension appended.
+     * @throws NullPointerException if the given file is {@code null}.
+     * @see #getStaticLibraryExtension()
+     * @see #withStaticLibraryExtension(File)
      */
     @Contract(pure = true)
     public @NotNull File withStaticLibraryExtension(final @NotNull File file) {
         return new File(file.getParentFile(), withStaticLibraryExtension(file.getName()));
     }
 
-    @Override public String toString() {
+    /**
+     * Gets the canonical machine-readable identifier of this OS.
+     *
+     * <p>The anatomy of the returned string <strong>always</strong> matches the
+     * following regular expression:
+     *
+     * <pre>{@code ^[a-z][a-z0-9]*$}</pre>
+     *
+     * @return {@link #name()} in {@code lower-dash-case}.
+     * @see #fromString(String)
+     * @see #fromStringOrNull(String)
+     */
+    @Contract(pure = true)
+    @Override public @NotNull String toString() {
         return id;
     }
 }

@@ -2,6 +2,8 @@ plugins {
     id("idea")
     id("java-library")
 
+    // Only used in tests
+    kotlin("jvm") version "1.5.21"
     id("jacoco")
 
     id("maven-publish")
@@ -16,10 +18,11 @@ dependencies {
     compileOnly("org.jetbrains:annotations:$jba")
     testCompileOnly("org.jetbrains:annotations:$jba")
 
+    testImplementation(platform(kotlin("bom")))
+    testImplementation(kotlin("stdlib-jdk8"))
     testImplementation(platform("org.junit:junit-bom:5.7.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("org.junit.jupiter:junit-jupiter-params")
-    testImplementation("org.junit-pioneer:junit-pioneer:1.4.1")
+    testImplementation("com.github.mifmif:generex:1.0.2")
     testImplementation("nl.jqno.equalsverifier:equalsverifier:3.6.1")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 }
@@ -38,7 +41,7 @@ tasks {
     }
 
     jacocoTestReport.configure {
-        dependsOn(test)
+        shouldRunAfter(test)
         reports {
             xml.isEnabled = System.getenv().containsKey("CI")
         }
