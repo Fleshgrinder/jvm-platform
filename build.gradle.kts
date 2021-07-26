@@ -43,7 +43,7 @@ tasks {
     jacocoTestReport.configure {
         shouldRunAfter(test)
         reports {
-            xml.isEnabled = System.getenv().containsKey("CI")
+            xml.required.set(System.getenv().containsKey("CI"))
         }
     }
 

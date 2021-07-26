@@ -139,6 +139,9 @@ private class PlatformTest {
     }
 
     @Test fun `equals and hashCode`() {
-        EqualsVerifier.forClass(Platform::class.java).withIgnoredFields("os", "arch").withNonnullFields("id").verify()
+        EqualsVerifier.forClass(Platform::class.java)
+            .withNonnullFields("os", "arch", "id")
+            .withOnlyTheseFields("id")
+            .verify()
     }
 }
