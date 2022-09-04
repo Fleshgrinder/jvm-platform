@@ -3,6 +3,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/com.fleshgrinder/jvm-platform)][Maven Central]
 [![GitHub CI Workflow](https://img.shields.io/github/workflow/status/Fleshgrinder/jvm-platform/ci)](https://github.com/Fleshgrinder/jvm-platform/actions)
 [![Code Coverage](https://img.shields.io/codecov/c/github/Fleshgrinder/jvm-platform)][CodeCov]
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/6452/badge)](https://bestpractices.coreinfrastructure.org/projects/6452)
 
 **JVM Platform** provides type-safe access to the Java Virtual Machine
 (JVM) `os.name` and `os.arch` system properties with tested support for a wide
